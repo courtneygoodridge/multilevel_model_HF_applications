@@ -41,12 +41,33 @@ library(lme4)
 
 if(!require(data.table)) install.packages("data.table")
 library(data.table)
+
+if(!require(emmeans)) install.packages("emmeans")
+library(emmeans)
+
+if(!require(patchwork)) install.packages("patchwork")
+library(patchwork)
+
+if(!require(marginaleffects)) install.packages("marginaleffects")
+library(marginaleffects)
+
+if(!require(purrr)) install.packages("purrr")
+library(purrr)
 ```
 
 ## Data
 
 ```{r}
 steering_data <- fread(file = here::here("ITS/Multilevel models paper/Mole et al (2020) data and analysis/collated_steering.csv"))
+```
+
+## Plot theme
+
+Theme for all the plots in this manuscript
+
+```{r}
+theme_plot <- theme(axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 18), legend.title = element_text(size = 10), legend.text = element_text(size = 10), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+panel.background = element_blank(), axis.line = element_line(colour = "black"))
 ```
 
 ## Calculating reaction time
@@ -167,3 +188,246 @@ data_RTs_cens_NA_removed <- data_RTs_cens_NA_removed %>%
   dplyr::mutate(TLC_failure = round(TLC_onset, digits = 2)) 
 ```
 
+## Distribution of TLC_takeover
+
+The distribution of TLC_takeover reasonably follows a Gaussian shape, however there is some skew (positively skewed with an extended right tail). This suggests that a Gaussian distribution might not be the best to model TLC_takeover. However it should be noted that it is the residuals that should be normally distributed, rather than the response metric itself. We'll go forward with a Gaussian distribution and inspect the fit. 
+
+```{r}
+# Overall distribution of TLC_takeover
+ggplot(data = data_RTs_cens_NA_removed, mapping = aes(x = TLC_takeover)) +
+  geom_histogram(alpha = 0.5, bins = 50, col = "black") +
+  ggtitle(expression("Overall distribution of" ~ TLC[t]))
+
+# Distribution of TLC_takeover within each failure severity condition
+ggplot(data = data_RTs_cens_NA_removed, mapping = aes(x = TLC_takeover)) +
+  geom_histogram(aes(fill = as.factor(TLC_failure)), alpha=0.5, bins=50, col = "black") +
+  facet_wrap(~ TLC_failure) +
+  ggtitle("Distribution within each failure condition")
+```
+
+## Fitting an ordinary linear regression
+
+```{r}
+# fitting a linear regression model
+tlc_takeover_linear_regression <- lm(TLC_takeover ~ TLC_failure, data = data_RTs_cens_NA_removed)
+
+# summarizing the linear regression model to see the parameter estimates
+summary(tlc_takeover_linear_regression)
+
+# confidence intervals for the linear regression
+confint(tlc_takeover_linear_regression)
+```
+
+## Investigating the residual errors
+
+```{r}
+
+
+
+```
+
+## Does log transforming the response variable improve the fit?
+
+```{r}
+
+
+
+
+```
+
+## Regression model fit
+
+For plotting the model parameters, I will also want to compute confidence intervals around my estimate of the mean. To do this for the linear models and the multilevel models, I follow a tutorial by Solomon Kurz (https://solomonkurz.netlify.app/blog/2021-12-16-use-emmeans-to-include-95-cis-around-your-lme4-based-fitted-lines/). This is a really good tutorial and involves using the *emmean()* function from the emmeans package.
+
+Within the *emmeans()* function, I specify failure criticality _(ttlc.failure)_ for the specs and in my list, I calculate predictions for failure criticalities between 1 s and 3 s. This is outside the range of failures used within the experiment, but because the data appear linear, we can extend out predictions to predict what ttlc.takeover values would be predicted for failures of 3 s.  
+
+
+```{r}
+# Computing 95% CIs using emmeans() function for linear regression model
+linear_regression_emmeans <- emmeans(object = tlc_takeover_linear_regression, specs = ~ TLC_failure, at = list(TLC_failure = seq(1.5, to = 10.5, by = .1))) %>% 
+  data.frame()
+
+# plotting linear regression model over data
+linear_regression_plot <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.4), alpha = 0.4, size = .7) +
+  geom_line(linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean), linetype = "dashed") +
+  geom_ribbon(data = linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean, ymin = lower.CL, ymax = upper.CL), alpha = .5) +
+  geom_point(data_RTs_cens_NA_removed %>%
+               dplyr::group_by(TLC_failure) %>%
+               dplyr::summarise(mean_takeover = mean(TLC_takeover)), mapping = aes(x = TLC_failure, y = mean_takeover), fill = "white", pch = 21) +
+  xlab(expression(TLC[F])) +
+  ylab(expression(TLC[T])) +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot
+
+# number of observations per participant
+data_RTs_cens_NA_removed %>%
+  dplyr::group_by(ppid) %>%
+  dplyr::summarise(obs = n()) %>%
+  View()
+```
+
+## Non-independence 
+
+The data points are not independent individual each because each participants has multiple observations within a condition. Data points belonging to one individual a more closely related to their other data points in comparison to someone else's data points. To highlight this, we select the first 5 participants in different colours. Participant 
+
+```{r}
+# example of 5 participants
+subset_sample_plot <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = 0.7, size = .9) +
+  xlab(expression(TLC[F])) +
+  ylab(expression(TLC[T])) +
+  scale_color_discrete(name = "Participant") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot +
+  theme(legend.position = c(.2, .6), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank())
+
+# how many observations per participant
+data_RTs_cens_NA_removed %>%
+  dplyr::filter(ppid <= 5) %>%
+  dplyr::group_by(ppid) %>%
+  dplyr::summarise(obs = n()) %>%
+  View()
+
+# how many participants
+data_RTs_cens_NA_removed %>%
+  dplyr::filter(ppid <= 5) %>%
+  View()
+```
+
+## Figure 1
+
+Left panel contains all data the parameters of the model predicting sample means in each condition. Right panel contains an example of 5 participants to illustrate the violation of independence amongst the data points
+
+```{r}
+fig_1 <- linear_regression_plot | subset_sample_plot
+
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_1.tiff"), plot = fig_1, width = 16, height = 8, units = 'cm', dpi = 300, type = 'cairo')
+```
+
+## Fitting a varying intercept model
+
+```{r}
+# fitting a varying intercept model
+tlc_takeover_varying_intercept <- lme4::lmer(TLC_takeover ~ TLC_failure + (1 | ppid), data = data_RTs_cens_NA_removed)
+
+# summarizing the model
+summary(tlc_takeover_varying_intercept)
+
+# generating confidence intervals
+confint(tlc_takeover_varying_intercept)
+
+coef(tlc_takeover_varying_intercept)[1]
+```
+
+## Marginal and conditional effects 
+
+When reading about multilevel models, you will undoubtedly come across "marginal" and "conditional" effects. The terminology can be very confusing (Heiss, 2021), and there are multiple resources on the differences:
+
+https://www.andrewheiss.com/blog/2022/11/29/conditional-marginal-marginaleffects/#conditional-effects-or-effect-of-a-variable-in-an-average-cluster
+
+https://www.andrewheiss.com/blog/2021/11/10/ame-bayes-re-guide/#continuous-effect
+
+https://rpsychologist.com/GLMM-part1-lognormal#simulation-code
+
+To summarise what has been highlighted previously, marginal and conditional effect can be defined as follows:
+
+*Conditional effect*: refers to the average driver i.e, the effect that failure severity has on the average driver. 
+
+*Marginal effect*: the average effect failure severity across all drivers. 
+
+These effects might sound similar but they are subtlety different. In context of the silent failures experiment, a conditional effect refers to the average driver i.e., the fixed effects when the random effects are all set to 0. Hence in our model, this predicts the effect of failure severity on takeover performance for a typical driver. Conversely, a marginal effect refers to the drivers on average. If we simulated 500 new drivers, and took their average on the the response scale, this would represent the population average. 
+
+Luckily, for a linear multilevel model, these conditional effects and marginal effects are equivalent (Magnusson, 2018). 
+
+However if there is a non-linear transformation (i.e, the response variable is log transformed or is approximated by a log normal distribution) then the driver specific and the average driver might not match up. 
+
+It can be demonstrated below that the  the two match up for the current model below. The grand intercept models the fasted response for the typical driver. However if we take the average of the random intercpts, we get identical values. 
+
+```{r}
+# grand intercept
+fixef(tlc_takeover_varying_intercept)[1]
+
+# average of the random participant intercepts
+coef(tlc_takeover_varying_intercept)[1] %>%
+  as.data.frame() %>%
+  dplyr::summarise(m = mean(ppid..Intercept.))
+```
+
+## Plotting fixed effects and participant specific regression lines
+
+By assigning each driver with their own intercept, each driver has their own regression line. Below, we generate regression lines for each driver, and then put them in a plot.
+
+```{r}
+# generate new data
+failures <- data.frame(TLC_failure = seq(1.5, to = 10.5, by = .1))
+ppids <- data.frame(ppid = unique(data_RTs_cens_NA_removed$ppid))
+new_values <- expand_grid(failures, ppids)
+
+# predict ppid-level estimates from the multilevel model
+ppid_varying_intercepts <- predict(tlc_takeover_varying_intercept, newdata = new_values) %>% 
+  data.frame() %>% 
+  set_names("y_hat") %>% 
+  dplyr::bind_cols(new_values)
+
+# individual intercepts 
+varying_intercepts_plot <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = 0.7, size = .9) +
+  geom_line(ppid_varying_intercepts %>%
+                dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, y = y_hat, col = as.factor(ppid))) +
+  xlab(expression(TLC[F])) +
+  ylab(expression(TLC[T])) +
+  scale_color_discrete(name = "Participant") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot +
+  theme(legend.position = c(.2, .6), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank())
+```
+
+## Computing 95% confidence intervals
+
+Next we compute confidence intervals for the fixed effect estiamate and plot it on the raw data. 
+
+```{r}
+# Computing 95% confidence intervals for population-level estimates
+varying_intercept_emmeans <- emmeans(object = tlc_takeover_varying_intercept, specs = ~ TLC_failure, at = list(TLC_failure = seq(1.5, to = 10.5, by = .1))) %>% 
+  data.frame()
+
+# fixed effects with 95% confidence intervals
+ggplot() +
+   geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.4), alpha = 0.4, size = .7) +
+  geom_ribbon(varying_intercept_emmeans , mapping = aes(x = TLC_failure, y = emmean, ymin = lower.CL, ymax = upper.CL), alpha = .5) +
+  geom_line(linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean), linetype = "dashed") +
+    geom_point(data_RTs_cens_NA_removed %>%
+               dplyr::group_by(TLC_failure) %>%
+               dplyr::summarise(mean_takeover = mean(TLC_takeover)), mapping = aes(x = TLC_failure, y = mean_takeover), fill = "white", pch = 21) +
+  xlab(expression(TLC[F])) +
+  ylab(expression(TLC[T])) +
+  scale_color_discrete(name = "Participant") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot +
+  theme(legend.position = c(.2, .6), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank())
+
+
+
+```
+
+## What actually are random effects?
+
+```{r}
+ranef(tlc_takeover_varying_intercept) %>%
+  as.data.frame() %>%
+  dplyr::mutate(participant_specific_intercept = condval + fixef(tlc_takeover_varying_intercept)[1]) %>%
+  View()
+
+ggplot(data_RTs_cens_NA_removed %>%
+         dplyr::filter(ppid == 11), mapping = aes(x= TLC_failure, y = TLC_takeover)) +
+  geom_point() +
+  ylim(0, 4)
+
+```
