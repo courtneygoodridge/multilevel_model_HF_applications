@@ -209,13 +209,13 @@ ggplot(data = data_RTs_cens_NA_removed, mapping = aes(x = TLC_takeover)) +
 
 ```{r}
 # fitting a linear regression model
-tlc_takeover_linear_regression <- lm(TLC_takeover ~ TLC_failure, data = data_RTs_cens_NA_removed)
+mod_1<- lm(TLC_takeover ~ TLC_failure, data = data_RTs_cens_NA_removed)
 
 # summarizing the linear regression model to see the parameter estimates
-summary(tlc_takeover_linear_regression)
+summary(mod_1)
 
 # confidence intervals for the linear regression
-confint(tlc_takeover_linear_regression)
+confint(mod_1)
 ```
 
 ## Investigating the residual errors
@@ -243,20 +243,17 @@ Within the *emmeans()* function, I specify failure criticality _(ttlc.failure)_ 
 
 
 ```{r}
-# Computing 95% CIs using emmeans() function for linear regression model
-linear_regression_emmeans <- emmeans(object = tlc_takeover_linear_regression, specs = ~ TLC_failure, at = list(TLC_failure = seq(1.5, to = 10.5, by = .1))) %>% 
-  data.frame()
-
 # plotting linear regression model over data
 linear_regression_plot <- ggplot() +
-  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.4), alpha = 0.4, size = .7) +
-  geom_line(linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean), linetype = "dashed") +
+  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.4), alpha = 0.2, size = 1.5) +
   geom_ribbon(data = linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean, ymin = lower.CL, ymax = upper.CL), alpha = .5) +
+  geom_line(linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean), linetype = "dashed", col = "red") +
   geom_point(data_RTs_cens_NA_removed %>%
                dplyr::group_by(TLC_failure) %>%
-               dplyr::summarise(mean_takeover = mean(TLC_takeover)), mapping = aes(x = TLC_failure, y = mean_takeover), fill = "white", pch = 21) +
-  xlab(expression(TLC[F])) +
-  ylab(expression(TLC[T])) +
+               dplyr::summarise(mean_takeover = mean(TLC_takeover)), mapping = aes(x = TLC_failure, y = mean_takeover), fill = "white", pch = 21, size = 1.5) + 
+  ggtitle("A") +
+  xlab(expression(TLC[F] ~ "(s)")) +
+  ylab(expression(TLC[T] ~ "(s)")) +
   ylim(0, 7) +
   xlim(0, 11) +
   theme_plot
@@ -276,10 +273,11 @@ The data points are not independent individual each because each participants ha
 # example of 5 participants
 subset_sample_plot <- ggplot() +
   geom_point(data_RTs_cens_NA_removed %>%
-         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = 0.7, size = .9) +
-  xlab(expression(TLC[F])) +
-  ylab(expression(TLC[T])) +
+         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .8, size = 1.5) +
+  xlab(expression(TLC[F] ~ "(s)")) +
+  ylab(expression(TLC[T] ~ "(s)")) +
   scale_color_discrete(name = "Participant") +
+  ggtitle("B") +
   ylim(0, 7) +
   xlim(0, 11) +
   theme_plot +
@@ -310,17 +308,62 @@ ggsave(here::here("multilevel_model_HF_applications/plots/fig_1.tiff"), plot = f
 
 ## Fitting a varying intercept model
 
+Here we fit a varying intercept model. The *(1 | ppid)* part of the model equations fits an intercept for each participant. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept. Remember, this is something we need to do as each member of the random effects group has multiple observations. 
+
 ```{r}
 # fitting a varying intercept model
-tlc_takeover_varying_intercept <- lme4::lmer(TLC_takeover ~ TLC_failure + (1 | ppid), data = data_RTs_cens_NA_removed)
+mod_2 <- lme4::lmer(TLC_takeover ~ TLC_failure + (1 | ppid), data = data_RTs_cens_NA_removed)
 
 # summarizing the model
-summary(tlc_takeover_varying_intercept)
+summary(mod_2)
 
 # generating confidence intervals
-confint(tlc_takeover_varying_intercept)
+confint(mod_2)
 
-coef(tlc_takeover_varying_intercept)[1]
+coef(mod_2)[1]
+```
+
+## Figure 2
+
+In a previous plot, it was highlighted how the repeated observations for each participant within each condition violated the non-independence assumption. Now each participant had been modeled with an intercept, we can update that plot and assign each participant with their own intercept. You'll notice that there are only 4 regression lines. This is because participant 1 and 2 have very similar intercept values, and because have modelled everyone as having a fixed TLC_failure slope, this is exactly the same for everyone. 
+
+This might seem strange given that the scatter plot seems to show that the two participants respond differently as failure get less severe. This is one indication that random slopes might be necessary. 
+
+```{r}
+# Computing 95% CIs using emmeans() function for linear regression model
+varying_intercept_emmeans <- emmeans(object = mod_2, specs = ~ TLC_failure, at = list(TLC_failure = seq(1.5, to = 10.5, by = .1))) %>% 
+  data.frame()
+
+# model predictions - predictions for TLC_t for failure severities between 1.5 s and 10.5 for 5 participants in the model
+TLC_failure <- data.frame(TLC_failure = seq(1.5, to = 10.5, by = .1))
+ppid <- data.frame(ppid = seq(1, to = 5, by = 1))
+pred_list <- expand_grid(ppid, TLC_failure)
+
+# 5 participants we are focusing on
+example_5_participants <- data_RTs_cens_NA_removed %>%
+  dplyr::filter(ppid <= 5)
+
+mod_2_predict_ppids <- predict(mod_2, newdata = pred_list) %>% 
+  data.frame() %>% 
+  set_names("y_hat") %>% 
+  bind_cols(pred_list)
+
+# example of 5 participants with their specifc intercepts
+fig_2 <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .8, size = 1.5) +
+  geom_line(mod_2_predict_ppids %>%
+              dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
+  xlab(expression(TLC[F] ~ "(s)")) +
+  ylab(expression(TLC[T] ~ "(s)")) +
+  scale_color_discrete(name = "Participant") +
+  ggtitle("A") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot +
+  theme(legend.position = c(.2, .6), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank())
+
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_2.tiff"), plot = fig_2, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
 ## Marginal and conditional effects 
