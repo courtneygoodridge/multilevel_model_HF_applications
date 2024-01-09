@@ -12,7 +12,7 @@ This repository contains the code that produces the analysis and plots for the l
 
 ## Code and analysis
 
-
+This particular analysis focuses on Frequentist multilevel models using the `lme4` package to fit them. This is probably the most common package in the literature. Some people may use the `lmerTest` package in order to obtain p values; the `lme4` package does not provide these. The reasons for this have been detailed extensively by [Douglas Bates](https://stat.ethz.ch/pipermail/r-help/2006-May/094765.html), one of the creators of the `lme4` package and the person who wrote the `lmer()` function. Personally, I am an advocate of the "new statistics" with a move away from null hypothesis signifiance testing, towards estimatation, quantifying variability, and meta analysis (Geoff Cumming's paper, ["The new statistics: Why and how"](https://journals.sagepub.com/doi/full/10.1177/0956797613504966) is well worth a read if people are interested in this approach). Hence I do away with p values altogether. 
 
 
 
