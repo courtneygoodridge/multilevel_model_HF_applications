@@ -1,0 +1,58 @@
+---
+title: 'Multilevel Models - Applications to Human Factors Research: Read me plots'
+author: "Courtney Goodridge"
+date: "09/01/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages
+
+```{r}
+if(!require(here)) install.packages("here")
+library(here)
+
+if(!require(ggplot2)) install.packages("ggplot2")
+library(ggplot2)
+
+if(!require(dplyr)) install.packages("dplyr")
+library(dplyr)
+
+if(!require(tidyr)) install.packages("tidyr")
+library(tidyr)
+
+if(!require(viridis)) install.packages("viridis")
+library(viridis)
+
+if(!require(lme4)) install.packages("lme4")
+library(lme4)
+
+if(!require(data.table)) install.packages("data.table")
+library(data.table)
+
+if(!require(emmeans)) install.packages("emmeans")
+library(emmeans)
+
+if(!require(patchwork)) install.packages("patchwork")
+library(patchwork)
+
+if(!require(marginaleffects)) install.packages("marginaleffects")
+library(marginaleffects)
+
+if(!require(purrr)) install.packages("purrr")
+library(purrr)
+```
+
+## Data
+
+Load data for read me file plots
+
+```{r}
+
+
+
+
+```

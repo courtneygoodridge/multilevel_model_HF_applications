@@ -388,7 +388,7 @@ Luckily, for a linear multilevel model, these conditional effects and marginal e
 
 However if there is a non-linear transformation (i.e, the response variable is log transformed or is approximated by a log normal distribution) then the driver specific and the average driver might not match up. 
 
-It can be demonstrated below that the  the two match up for the current model below. The grand intercept models the fasted response for the typical driver. However if we take the average of the random intercpts, we get identical values. 
+It can be demonstrated below that the  the two match up for the current model below. The grand intercept models the fasted response for the typical driver. However if we take the average of the random intercepts, we get identical values. 
 
 ```{r}
 # grand intercept
@@ -433,7 +433,7 @@ varying_intercepts_plot <- ggplot() +
 
 ## Computing 95% confidence intervals
 
-Next we compute confidence intervals for the fixed effect estiamate and plot it on the raw data. 
+Next we compute confidence intervals for the fixed effect estimate and plot it on the raw data. 
 
 ```{r}
 # Computing 95% confidence intervals for population-level estimates
@@ -462,15 +462,82 @@ ggplot() +
 
 ## What actually are random effects?
 
+The *ranef()* function, despite the name, does not extract the random effects per se. Instead, it extracts the conditional models of each participant. These can effectively be thought of as deflections from the grand mean - for a varying intercept model, this is the grand intercept. By adding the conditional modes to the grand intercept, we get the individual participant intercepts. 
+
 ```{r}
-ranef(tlc_takeover_varying_intercept) %>%
+ranef(mod_2) %>%
   as.data.frame() %>%
-  dplyr::mutate(participant_specific_intercept = condval + fixef(tlc_takeover_varying_intercept)[1]) %>%
+  dplyr::mutate(participant_specific_intercept = condval + fixef(mod_2)[1]) %>%
   View()
-
-ggplot(data_RTs_cens_NA_removed %>%
-         dplyr::filter(ppid == 11), mapping = aes(x= TLC_failure, y = TLC_takeover)) +
-  geom_point() +
-  ylim(0, 4)
-
 ```
+
+## Figure 3
+
+To understand what conditional modes are, the following section uses them in two ways. Firstly, they are plotted about zero. This highlights that when fitting the model, the conditional modes are estimated via zero-centred Gaussian distribution. This reason for a Gaussian distribution is unknown to me, how I have some ideas. One might simply be computational ease. Another might be that if we want to estimate population level variance of some response, then a normal distribution might be a strong assumption to make. Another is that a Gaussian has relatively thin tales. This means that if individual estimates do not have much data, they shrink towards the average (the tails of the distribution constrain outlying values). This is known as *shrinkage*. Now, I am sure that there are other distributions that also have thin tails, but I think the combination of these factors result in a Gaussian distribution being the default. 
+
+Back to the figures - panel A plots the conditional modes around zero. Panel B plots the predicted intercepts (individual conditional modes + grand intercept) around the grand intercept. 
+
+These two ways of understanding random effects are why some people specify the model equations as being centred on the grand parameter, or being zero centred.  
+
+```{r}
+# extracting conditional models
+cond_mode <- as.data.frame(ranef(mod_2, condVar = TRUE))
+
+# standard error of the intercepts
+cond_mode_SE <- transform(cond_mode,
+                          lwr = condval - 1.96 * condsd,
+                          upr = condval + 1.96 * condsd)
+
+beta_0_j <- cond_mode_SE$condval # conditional modes
+beta_0_j_sd <- cond_mode_SE$condsd # 
+
+# distribution of conditional modes about 0
+fig_3_conditional_modes <- ggplot() + 
+  geom_point(cond_mode_SE, mapping = aes(x = condval, y = grp)) +
+   geom_errorbarh(cond_mode_SE %>%
+                   dplyr::arrange(as.integer(as.character(grp))), mapping = aes(x = condval, y = grp, xmin = lwr, xmax = upr), height = .2) +
+  geom_vline(mapping = aes(xintercept = 0)) +
+  xlab("Conditional modes") +
+  ylab("Participant") +
+  ggtitle("A") +
+  scale_x_continuous(limits = c(-.6, 1), breaks = c(-.5, 0, .5, 1)) +
+  theme_plot 
+
+
+beta_0 <- summary(mod_2)$coefficients[1,1] # grand intercept
+beta_0_SE <- summary(mod_2)$coefficients[1,2] # standard error of grand intercept
+
+
+b0u0 <- beta_0 + beta_0_j
+b0u0SD <- sqrt(beta_0_SE^2 +beta_0_j_sd^2)
+
+b0u0lower <- b0u0 - 2 * b0u0SD
+b0u0upper <- b0u0 + 2 * b0u0SD
+
+# creating data frame with participant specific intercepts alongside upper and lower bounds
+by_ppid_intercept <- data.frame(b = b0u0,lower = b0u0lower,upper = b0u0upper)
+by_ppid_intercept$ppid <- factor(1:12)
+
+by_ppid_intercept <- by_ppid_intercept[order(by_ppid_intercept$b),]
+
+by_ppid_intercept$ppid <- factor(by_ppid_intercept$ppid,levels = as.numeric(by_ppid_intercept$ppid))
+
+
+fig_3_intercepts <- ggplot() +
+  geom_point(by_ppid_intercept %>%
+               dplyr::arrange(as.integer(as.character(ppid))), mapping = aes(x = b, y = ppid)) +
+  geom_errorbarh(by_ppid_intercept %>%
+                   dplyr::arrange(as.integer(as.character(ppid))), mapping = aes(x = b, y = ppid, xmin = lower, xmax = upper), height = .2) +
+  geom_vline(mapping = aes(xintercept = fixef(mod_2)[1])) +
+  xlab(expression("Predicted" ~ beta[0])) +
+  ylab("Participant") +
+  ggtitle("B") +
+  scale_x_continuous(limits = c(-.6, 1.5), breaks = c(-.5, 0, .5, 1, 1.5)) +
+  theme_plot 
+
+fig_3 <- fig_3_conditional_modes | fig_3_intercepts
+
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_3.tiff"), plot = fig_3, width = 16, height = 8, units = 'cm', dpi = 300, type = 'cairo')
+```
+
+
