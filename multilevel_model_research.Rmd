@@ -243,6 +243,10 @@ Within the *emmeans()* function, I specify failure criticality _(ttlc.failure)_ 
 
 
 ```{r}
+# Computing 95% CIs using emmeans() function for linear regression model
+linear_regression_emmeans <- emmeans(object = mod_1, specs = ~ TLC_failure, at = list(TLC_failure = seq(1.5, to = 10.5, by = .1))) %>% 
+  data.frame()
+
 # plotting linear regression model over data
 linear_regression_plot <- ggplot() +
   geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.4), alpha = 0.2, size = 1.5) +

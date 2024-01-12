@@ -56,3 +56,116 @@ Load data for read me file plots
 
 
 ```
+
+## General assumption
+
+Lets assume with have a variable X which we think might be related variable Y
+
+```{r}
+fig_1_readme <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+               dplyr::filter(ppid <= 6), mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 2), size = 1.5) +
+  xlab("X") +
+  ylab("Y") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot
+
+ggsave(here::here("multilevel_model_HF_applications/readme_plots/fig_1_readme.tiff"), plot = fig_1_readme, width = 6, height = 6, units = 'cm', dpi = 300, type = 'cairo')
+```
+
+## Traditional analysis 
+
+A traditional analysis might fit a model to predict Y as a function of X. 
+
+```{r}
+readme_mod_1 <- lm(TLC_takeover ~ TLC_failure, data = data_RTs_cens_NA_removed %>%
+                    dplyr::filter(ppid <= 6))
+
+readme_mod_emmeans <- emmeans(object = readme_mod_1, specs = ~ TLC_failure, at = list(TLC_failure = seq(0, to = 12, by = .1))) %>% 
+  data.frame()
+
+fig_2_readme <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+               dplyr::filter(ppid <= 6), mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 2), size = 1.5) +
+  geom_ribbon(data = readme_mod_emmeans, mapping = aes(x = TLC_failure, y = emmean, ymin = lower.CL, ymax = upper.CL), alpha = .5) +
+  geom_line(readme_mod_emmeans, mapping = aes(x = TLC_failure, y = emmean), linetype = "dashed", col = "red") +
+  xlab("X") +
+  ylab("Y") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot
+
+ggsave(here::here("multilevel_model_HF_applications/readme_plots/fig_2_readme.tiff"), plot = fig_2_readme, width = 6, height = 6, units = 'cm', dpi = 300, type = 'cairo')
+```
+
+## It's a complicated world
+
+Not everyone or everything is the same. There are groups within the whole that might differ in interesting ways. Perhaps for some of those groups, X predicts Y very strongly; for others, less so.
+
+```{r}
+fig_3_readme <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+               dplyr::filter(ppid <= 6), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 2), size = 1.5) +
+  geom_ribbon(data = readme_mod_emmeans, mapping = aes(x = TLC_failure, y = emmean, ymin = lower.CL, ymax = upper.CL), alpha = .5) +
+  geom_line(readme_mod_emmeans, mapping = aes(x = TLC_failure, y = emmean), linetype = "dashed", col = "red") +
+  xlab("X") +
+  ylab("Y") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot +
+  theme(legend.position = "none")
+
+ggsave(here::here("multilevel_model_HF_applications/readme_plots/fig_3_readme.tiff"), plot = fig_3_readme, width = 6, height = 6, units = 'cm', dpi = 300, type = 'cairo')
+```
+
+## Multilevels models can help make sense
+
+```{r}
+readme_mod_2 <- lmer(TLC_takeover ~ TLC_failure + (TLC_failure | ppid), data = data_RTs_cens_NA_removed %>%
+                    dplyr::filter(ppid <= 6))
+
+example <- data_RTs_cens_NA_removed %>%
+  dplyr::filter(ppid <= 6)
+  
+# generate new data
+failures <- data.frame(TLC_failure = seq(0, to = 12, by = .1))
+ppids <- data.frame(ppid = unique(example$ppid))
+new_values <- expand_grid(failures, ppids)
+
+# predict ppid-level estimates from the multilevel model
+readme_intercepts_slopes <- predict(readme_mod_2, newdata = new_values) %>% 
+  data.frame() %>% 
+  set_names("y_hat") %>% 
+  dplyr::bind_cols(new_values)
+
+readme_intercepts_slopes_emmeans <- emmeans(object = readme_mod_2, specs = ~ TLC_failure, at = list(TLC_failure = seq(0, to = 12, by = .1))) %>% 
+  data.frame()
+
+
+fig_4_readme <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+         dplyr::filter(ppid <= 6), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 2),size = 1.5, alpha = .5) +
+  geom_line(readme_intercepts_slopes, mapping = aes(x = TLC_failure, y = y_hat, col = as.factor(ppid))) +
+  xlab("X") +
+  ylab("Y") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot +
+  theme(legend.position = "none")
+
+# faceting by group - not using this plot in the read me though
+ggplot() +
+  geom_point(data_RTs_cens_NA_removed %>%
+         dplyr::filter(ppid <= 6), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 2),size = 1.5) +
+  geom_line(readme_intercepts_slopes, mapping = aes(x = TLC_failure, y = y_hat, col = as.factor(ppid))) +
+  xlab("X") +
+  ylab("Y") +
+  ylim(0, 7) +
+  xlim(0, 11) +
+  theme_plot +
+  facet_wrap(~ ppid) +
+  theme(legend.position = "none")
+
+ggsave(here::here("multilevel_model_HF_applications/readme_plots/fig_4_readme.tiff"), plot = fig_4_readme, width = 6, height = 6, units = 'cm', dpi = 300, type = 'cairo')
+```
