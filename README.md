@@ -3,7 +3,6 @@
 **Disclaimer**: *This is a working repository and so information and code may change*
 
 ## Overview: Multilevel models
-
 Multilevel models are extensions of normal linear regression. They allow a researcher or scientist to model the inherent variability between related clusters in a wider population. As an example, lets assume there is a variable X that we believe to be related to a variable Y:
 
 ![image](https://github.com/courtneygoodridge/multilevel_model_HF_applications/assets/44811378/989cbf64-c526-4663-a789-476fb217cb3b)
@@ -25,7 +24,6 @@ I have given numerous talks and presentations about this analysis method. I beli
 One reason for the lack of uptake in Human Factors is a lack of any formal tutorials. Whilst tutorials exist, they are largely in areas of Ecology, Linguistics, or Edcuation research. This is not surprising, considering that the quantitative data produced in these research areas is naturally hierarchical (e.g., Education: pupils within classes, classes within schools, schools within counties, and so on). These tutorials are fine in and of themselves, and can undoubtedly help people under the models. However, from my own experience, the hurdle is lessened if their is a tutorial that focuses specifically on the data you are working with. In this sense, I am providing the tutorial that I wanted when I first started working on these models back in 2019.   
 
 ## Code and analysis
-
 This repository contains the code that produces the analysis and plots for the larger manuscript that I am currently working on. This particular analysis focuses on Frequentist multilevel models using the `lme4` package to fit them. This is probably the most common package in the literature. Some people may use the `lmerTest` package in order to obtain p values; the `lme4` package does not provide these. The reasons for this have been detailed extensively by [Douglas Bates](https://stat.ethz.ch/pipermail/r-help/2006-May/094765.html), one of the creators of the `lme4` package and the person who wrote the `lmer()` function. Personally, I am an advocate of the "new statistics" movement; moving away from null hypothesis signifiance testing and towards estimatation, quantifying variability, and meta analysis (Geoff Cumming's paper, ["The new statistics: Why and how"](https://journals.sagepub.com/doi/full/10.1177/0956797613504966) is well worth a read if people are interested in this approach). Therefore, I do not focus on p values in analysis script (or the manuscript itself). 
 
 
