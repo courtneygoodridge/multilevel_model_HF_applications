@@ -145,7 +145,7 @@ readme_intercepts_slopes_emmeans <- emmeans(object = readme_mod_2, specs = ~ TLC
 
 fig_4_readme <- ggplot() +
   geom_point(data_RTs_cens_NA_removed %>%
-         dplyr::filter(ppid <= 6), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 2),size = 1.5, alpha = .5) +
+         dplyr::filter(ppid <= 6), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 2),size = 1.5, alpha = .3) +
   geom_line(readme_intercepts_slopes, mapping = aes(x = TLC_failure, y = y_hat, col = as.factor(ppid))) +
   xlab("X") +
   ylab("Y") +
