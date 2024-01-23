@@ -530,9 +530,9 @@ mod_3 <- lme4::lmer(TLC_takeover ~ TLC_failure + (TLC_failure | ppid), data = da
 summary(mod_3)
 
 # generating confidence intervals
-confint(mod_2)
+confint(mod_3)
 
-coef(mod_2)[1]
+coef(mod_3)[1]
 ```
 
 ## Figure 4
@@ -583,11 +583,32 @@ When fitting a multilevel model with varying intercepts and varying slopes, a co
 mod_3_ranef <- as.data.frame(coef(mod_3)$ppid) %>%
   dplyr::rename_all(~c("Intercepts", "TLC_failure"))
 
-ggplot(mod_3_ranef, mapping = aes(x = Intercepts, y = TLC_failure)) +
+# correlations between random slopes and random intercepts
+fig_5 <- ggplot(mod_3_ranef, mapping = aes(x = Intercepts, y = TLC_failure)) +
   geom_point() +
+  xlim(.25, .65) +
   xlab(expression(beta[0][j])) +
-  ylab("Random orientation slopes") +
+  ylab(expression(beta[F][j])) +
   theme_plot 
 
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = fig_5, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
+```
 
+## Heterogenity intervals
+
+```{r}
+# extracting SD of random slopes
+random_effects <- VarCorr(mod_3) %>%
+    as.data.frame()
+
+sigma_beta_f <- random_effects$sdcor[2]
+
+# relative size of the SD versus the fixed effect
+sigma_beta_f / fixef(mod_3)[2]
+
+# upper bound
+(fixef(mod_3)[2] + 1.96 * sigma_beta_f)
+
+# lower bound
+(fixef(mod_3)[2] - 1.96 * sigma_beta_f)
 ```
