@@ -61,15 +61,6 @@ library(purrr)
 steering_data <- fread(file = here::here("ITS/Multilevel models paper/Mole et al (2020) data and analysis/collated_steering.csv"))
 ```
 
-## Plot theme
-
-Theme for all the plots in this manuscript
-
-```{r}
-theme_plot <- theme(axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 18), legend.title = element_text(size = 10), legend.text = element_text(size = 10), panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-panel.background = element_blank(), axis.line = element_line(colour = "black"))
-```
-
 ## Calculating reaction time
 
 Now the data has been loaded, the reaction time can be calculated. I calculate steering wheel angle and mirror the directional variables for completeness but this is not strictly necessary (only TLC_takeover will be used for the analysis). 
@@ -220,10 +211,16 @@ confint(mod_1)
 
 ## Investigating the residual errors
 
+Here we plot the fitted values against the residuals. 
+
 ```{r}
+mod_1_fortified <- fortify(mod_1)
 
-
-
+ggplot(mod_1_fortified, aes(x = .fitted, y = .resid)) + 
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  theme_bw() +
+  theme(legend.position = c(.9, .7), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 18), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key = element_blank(), legend.key.width = unit(0.3, 'cm'), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 13, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 ```
 
 ## Does log transforming the response variable improve the fit?
@@ -594,21 +591,60 @@ fig_5 <- ggplot(mod_3_ranef, mapping = aes(x = Intercepts, y = TLC_failure)) +
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = fig_5, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
+### Study 2: Goodridge, C. M., Gonçalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2023). Gaze Entropy Metrics for Mental Workload Estimation are Heterogenous During Hands-Off Level 2 Automation.
+
+## Load data 
+
+In the original manuscript, participants 34, 39, and 47 were removed. I do the same here, alongside checking the distribution of the data
+
+```{r}
+# load data
+goodridge_2023_dat <- fread(file = here::here("gaze_entropy_heterogenous/data/entropy.total.csv"))
+
+# removing participants 
+goodridge_2023_dat <- goodridge_2023_dat %>%
+  tidyr::drop_na() %>%
+  dplyr::filter(ppid != 34, ppid != 39, ppid != 47)
+
+# plotting distribution
+ggplot(data = goodridge_2023_dat, mapping = aes(x = e.norm)) +
+  geom_histogram(aes(fill = as.factor(n_back)), alpha=0.5, bins=50, col = "black") +
+  facet_wrap(~ lead)
+
+# 38 participants 
+goodridge_2023_dat %>%
+  dplyr::group_by(ppid) %>%
+  dplyr::slice(1) %>%
+  View()
+```
+
+## Model fitting
+
+```{r}
+mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2023_dat)
+
+summary(mod_4)
+
+confint(mod_4)
+```
+
 ## Heterogenity intervals
 
 ```{r}
 # extracting SD of random slopes
-random_effects <- VarCorr(mod_3) %>%
+random_effects <- VarCorr(mod_4) %>%
     as.data.frame()
 
-sigma_beta_f <- random_effects$sdcor[2]
+sigma_beta_n <- random_effects$sdcor[2]
 
 # relative size of the SD versus the fixed effect
-sigma_beta_f / fixef(mod_3)[2]
+sigma_beta_n / fixef(mod_4)[2]
 
 # upper bound
-(fixef(mod_3)[2] + 1.96 * sigma_beta_f)
+(fixef(mod_4)[2] + 1.96 * sigma_beta_n)
 
 # lower bound
-(fixef(mod_3)[2] - 1.96 * sigma_beta_f)
+(fixef(mod_4)[2] - 1.96 * sigma_beta_n)
 ```
+
+
