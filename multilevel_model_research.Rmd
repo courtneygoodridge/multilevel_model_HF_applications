@@ -257,7 +257,8 @@ linear_regression_plot <- ggplot() +
   ylab(expression(TLC[T] ~ "(s)")) +
   ylim(0, 7) +
   xlim(0, 11) +
-  theme_plot
+  theme_bw() +
+  theme(legend.position = c(.9, .7), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 18), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key = element_blank(), legend.key.width = unit(0.3, 'cm'), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 # number of observations per participant
 data_RTs_cens_NA_removed %>%
@@ -281,8 +282,10 @@ subset_sample_plot <- ggplot() +
   ggtitle("B") +
   ylim(0, 7) +
   xlim(0, 11) +
-  theme_plot +
-  theme(legend.position = c(.2, .6), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank())
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
+
+
 
 # how many observations per participant
 data_RTs_cens_NA_removed %>%
@@ -360,8 +363,8 @@ fig_2 <- ggplot() +
   scale_color_discrete(name = "Participant") +
   ylim(0, 7) +
   xlim(0, 11) +
-  theme_plot +
-  theme(legend.position = c(.2, .6), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank())
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_2.tiff"), plot = fig_2, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
@@ -460,7 +463,8 @@ fig_3_conditional_modes <- ggplot() +
   ylab("Participant") +
   ggtitle("A") +
   scale_x_continuous(limits = c(-.6, 1), breaks = c(-.5, 0, .5, 1)) +
-  theme_plot 
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 
 beta_0 <- summary(mod_2)$coefficients[1,1] # grand intercept
@@ -492,11 +496,12 @@ fig_3_intercepts <- ggplot() +
   ylab("Participant") +
   ggtitle("B") +
   scale_x_continuous(limits = c(-.6, 1.5), breaks = c(-.5, 0, .5, 1, 1.5)) +
-  theme_plot 
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 fig_3 <- fig_3_conditional_modes | fig_3_intercepts
 
-ggsave(here::here("multilevel_model_HF_applications/plots/fig_3.tiff"), plot = fig_3, width = 16, height = 8, units = 'cm', dpi = 300, type = 'cairo')
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_3.tiff"), plot = fig_3, width = 16, height = 9, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
 ## Random effect parameters specify the sampling distribution, not the sample
@@ -566,8 +571,8 @@ fig_4 <- ggplot() +
   scale_color_discrete(name = "Participant") +
   ylim(0, 7) +
   xlim(0, 11) +
-  theme_plot +
-  theme(legend.position = c(.2, .6), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank())
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_4.tiff"), plot = fig_4, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
@@ -586,7 +591,8 @@ fig_5 <- ggplot(mod_3_ranef, mapping = aes(x = Intercepts, y = TLC_failure)) +
   xlim(.25, .65) +
   xlab(expression(beta[0][j])) +
   ylab(expression(beta[F][j])) +
-  theme_plot 
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = fig_5, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
@@ -645,6 +651,26 @@ sigma_beta_n / fixef(mod_4)[2]
 
 # lower bound
 (fixef(mod_4)[2] - 1.96 * sigma_beta_n)
+```
+
+## Figure 6 
+
+This is a strip plot that highlights the individual estimates of the sample, the 95% confidence intervals, and the 95% heterogenity intervals. 
+
+```{r}
+
+
+
+```
+
+
+
+## Maximal models
+
+```{r}
+mod_5 <- lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2023_dat)
+
+summary(mod_5)
 ```
 
 
