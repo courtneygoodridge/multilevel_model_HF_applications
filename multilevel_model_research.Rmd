@@ -53,6 +53,15 @@ library(marginaleffects)
 
 if(!require(purrr)) install.packages("purrr")
 library(purrr)
+
+if(!require(scales)) install.packages("scales")
+library(scales)
+
+if(!require(afex)) install.packages("afex")
+library(afex)
+
+if(!require(effectsize)) install.packages("effectsize")
+library(effectsize)
 ```
 
 ## Data
@@ -246,7 +255,7 @@ linear_regression_emmeans <- emmeans(object = mod_1, specs = ~ TLC_failure, at =
 
 # plotting linear regression model over data
 linear_regression_plot <- ggplot() +
-  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.4), alpha = 0.2, size = 1.5) +
+  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.5), alpha = 0.2, size = 1.5) +
   geom_ribbon(data = linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean, ymin = lower.CL, ymax = upper.CL), alpha = .5) +
   geom_line(linear_regression_emmeans, mapping = aes(x = TLC_failure, y = emmean), linetype = "dashed", col = "red") +
   geom_point(data_RTs_cens_NA_removed %>%
@@ -274,8 +283,9 @@ The data points are not independent individual each because each participants ha
 ```{r}
 # example of 5 participants
 subset_sample_plot <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.5), alpha = 0.1, size = 1.5) +
   geom_point(data_RTs_cens_NA_removed %>%
-         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .8, size = 1.5) +
+         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.5), alpha = .6, size = 1.5) +
   xlab(expression(TLC[F] ~ "(s)")) +
   ylab(expression(TLC[T] ~ "(s)")) +
   scale_color_discrete(name = "Participant") +
@@ -283,11 +293,11 @@ subset_sample_plot <- ggplot() +
   ylim(0, 7) +
   xlim(0, 11) +
   theme_bw() +
-  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
+  theme(legend.position = c(.20, .70), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_rect(fill = "transparent"), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 
 
-# how many observations per participant
+  # how many observations per participant
 data_RTs_cens_NA_removed %>%
   dplyr::filter(ppid <= 5) %>%
   dplyr::group_by(ppid) %>%
@@ -354,8 +364,9 @@ mod_2_predict_ppids <- predict(mod_2, newdata = pred_list) %>%
 
 # example of 5 participants with their specifc intercepts
 fig_2 <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.5), alpha = 0.1, size = 1.5) +
   geom_point(data_RTs_cens_NA_removed %>%
-         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .8, size = 1.5) +
+         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .6, size = 1.5) +
   geom_line(mod_2_predict_ppids %>%
               dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
   xlab(expression(TLC[F] ~ "(s)")) +
@@ -364,7 +375,7 @@ fig_2 <- ggplot() +
   ylim(0, 7) +
   xlim(0, 11) +
   theme_bw() +
-  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
+  theme(legend.position = c(.19, .76), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_rect(fill = "transparent"), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_2.tiff"), plot = fig_2, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
@@ -562,8 +573,9 @@ mod_3_predict_ppids <- predict(mod_3, newdata = pred_list) %>%
 
 # example of 5 participants with their specifc intercepts
 fig_4 <- ggplot() +
+  geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.5), alpha = 0.1, size = 1.5) +
   geom_point(data_RTs_cens_NA_removed %>%
-         dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .8, size = 1.5) +
+               dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .6, size = 1.5) +
   geom_line(mod_3_predict_ppids %>%
               dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
   xlab(expression(TLC[F] ~ "(s)")) +
@@ -572,7 +584,7 @@ fig_4 <- ggplot() +
   ylim(0, 7) +
   xlim(0, 11) +
   theme_bw() +
-  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
+  theme(legend.position = c(.19, .76), legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_rect(fill = "transparent"), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_4.tiff"), plot = fig_4, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
@@ -637,6 +649,8 @@ confint(mod_4)
 ## Heterogenity intervals
 
 ```{r}
+#HI_95 for slopes
+
 # extracting SD of random slopes
 random_effects <- VarCorr(mod_4) %>%
     as.data.frame()
@@ -651,6 +665,18 @@ sigma_beta_n / fixef(mod_4)[2]
 
 # lower bound
 (fixef(mod_4)[2] - 1.96 * sigma_beta_n)
+
+#HI_95 for intercepts
+sigma_beta_0 <- random_effects$sdcor[1]
+
+sigma_beta_0 / fixef(mod_4)[1]
+
+
+# upper bound
+(fixef(mod_4)[1] + 1.96 * sigma_beta_0)
+
+# lower bound
+(fixef(mod_4)[1] - 1.96 * sigma_beta_0)
 ```
 
 ## Figure 6 
@@ -658,11 +684,39 @@ sigma_beta_n / fixef(mod_4)[2]
 This is a strip plot that highlights the individual estimates of the sample, the 95% confidence intervals, and the 95% heterogenity intervals. 
 
 ```{r}
+individual_effects <- as.data.frame(ranef(mod_4, condVar = TRUE)) %>% # save random effects as a dataframe
+  dplyr::filter(term == "n_backTRUE") %>% # select the conditional modes (participant-specific offsets for the effect of N-back)
+  dplyr::select(1:4) %>% # select first 4 columns
+  dplyr::group_by(grp) %>%
+  dplyr::mutate(beta_n_j = condval + fixef(mod_4)[2]) # add the fixed effect to participant-specific offsets to get participant specific effects of n-back
+ 
+individual_effects$x <- "x" # creating column to associate with opposite axis for plotting 
+
+# save confidence intervals from model
+intervals <- as.data.frame(confint(mod_4))
+
+ 
+fig_6 <- ggplot() +
+  geom_jitter(individual_effects, mapping = aes(x = x, y = beta_n_j), width = 0.01, height = 0, size = 4,
+              shape = 21, colour = "black", fill = "#619CFF", alpha = .95, stroke = 1) +
+  #scale_y_continuous(breaks = round(seq(-.3, .3, 0.05), digits = 2)) +
+  ylab(expression("N-back effect on" ~ mu ~ "of" ~ italic(H[s]) ~ "(% point units)")) +
+  xlab("") + 
+  scale_y_continuous(limits = c(-.35, .1), breaks = seq(-.3, .1, 0.1), labels = label_number(accuracy = 0.01)) +
+  geom_hline(aes(yintercept = intervals$`2.5 %`[6], linetype = "95% CI"), size = 1.5,  color = "#619CFF") +
+  geom_hline(aes(yintercept = intervals$`97.5 %`[6], linetype = "95% CI"), size = 1.5,  color = "#619CFF") +
+  geom_hline(aes(yintercept = fixef(mod_4)[2], linetype = "beta_1"), size = 1.5, color = "black") +
+  geom_hline(aes(yintercept = (fixef(mod_4)[2] + 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = "#619CFF") +
+  geom_hline(aes(yintercept = (fixef(mod_4)[2] - 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = "#619CFF") +
+    scale_linetype_manual(name = " ", values = c(2, 3, 1), labels = c(expression(CI[95]), expression(HI[95]), expression(beta[N])), guide = guide_legend(override.aes = list(color = c("#619CFF", "#619CFF", "black")))) +
+  scale_fill_manual(name = "Parameter", values = c("dodgerblue2")) +
+  theme_bw() +
+  theme(legend.position = "bottom", legend.direction = "horizontal", legend.key.width = unit(3, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_rect(fill = "transparent"), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.text.y = element_blank(), axis.ticks.y = element_blank(), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10)) +
+  coord_flip()  
 
 
-
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_6.tiff"), plot = fig_6, width = 16, height = 9, units = 'cm', dpi = 300, type = 'cairo')
 ```
-
 
 
 ## Maximal models
@@ -671,6 +725,20 @@ This is a strip plot that highlights the individual estimates of the sample, the
 mod_5 <- lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2023_dat)
 
 summary(mod_5)
+```
+
+
+## Comparing MLM outputs to RM ANOVAs
+
+```{r}
+rm_anova <- aov_car(e.norm ~ n_back * lead + Error(ppid/n_back * lead), data = goodridge_2023_dat)
+
+summary(rm_anova)
+eta_squared(rm_anova)
+
+goodridge_2023_dat %>%
+  dplyr::group_by(n_back) %>%
+  dplyr::summarise(mean_e = mean(e.norm), mean_sd = sd(e.norm))
 ```
 
 
