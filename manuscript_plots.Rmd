@@ -1,22 +1,13 @@
 ---
-title: "Multilevel Models - Applications to Human Factors Research"
+title: "Plots for the manuscript"
 author: "Courtney Goodridge"
-date: "17/11/2023"
+date: "09/05/2024"
 output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
-This script contains the analysis for the manuscripts: *Multilevel Models: Applications and Uses in Human Factors Research*
-
-Data for the first analysis is from the Mole et al (2020) manuscript. This manuscript reference is: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. Plos one, 15(11), e0242825. 
-
-Data and analysis scripts can be found on OSF: https://osf.io/aw8kp/. 
-
-
-First we load the necessary packages needed for this analysis
 
 ## Packages
 
@@ -64,129 +55,7 @@ if(!require(effectsize)) install.packages("effectsize")
 library(effectsize)
 ```
 
-## Data
-
-```{r}
-steering_data <- fread(file = here::here("ITS/Multilevel models paper/Mole et al (2020) data and analysis/collated_steering.csv"))
-```
-
-## Calculating reaction time
-
-Now the data has been loaded, the reaction time can be calculated. I calculate steering wheel angle and mirror the directional variables for completeness but this is not strictly necessary (only TLC_takeover will be used for the analysis). 
-
-```{r}
-# Mole et al (2020) calculating the SWA. I won't be using that for the analysis, but for completeness I calculate it here.
-steering_data <- steering_data %>%
-  dplyr::rename(swv = swa) %>%
-  dplyr::mutate(swa = swv * 90)
-
-# Next the data mirrored. Again, I am only focusing on timing variable so these won't be needed for the analysis but are included for completeness.
-steering_data <- steering_data %>% 
-  dplyr::mutate(world_x_mirrored = if_else(bend == -1, world_x * -1, world_x),
-                swa_mirrored = if_else(bend == -1, swa * -1, swa),
-                swv_mirrored = if_else(bend == -1, swv * -1, swv),
-                sb_mirrored = if_else(bend == -1, steeringbias * -1, steeringbias))
-
-# function for calculating the TLC from the offset where is varies 
-TLC_from_offset <- function(b, w = 1.5, r = 80, v = 8){
-  b = b / 180 * pi
-  
-  TLC = sqrt(w*(2*r + sign(b)*w)/(abs(b)*r*v))
-}
-
-steering_data <- steering_data %>% 
-  dplyr::mutate(TLC_calc = TLC_from_offset(sab))
-
-
-#add RT and disengage flag. This code calculates RT. I had to alter it slightly to include an if statement where if the auto_false was length 0 (i.e., a person never disengaged), it was set to NA instead of being empty. This allows the is.na() function to work in the following lines of code)
-disengage_RT <- function(onsettime, timestamp_trial, autoflag){
-  
-  #pick first frame where autoflag == false, then take the timestamp and minus the onset_time
-  auto_false <- which(autoflag == FALSE) # 1) select the autoflags which are false
-  if(length(auto_false) == 0){ # 2) if there is no false autoflag, set auto_false to NA
-    auto_false = NA
-  }
-  disengage_index <- first(auto_false) # 3 select the first frame that automation was disengaged
-  disengage_trialtime <- timestamp_trial[disengage_index] # 4) select the trial time of the automation disengagement
-  onset_time <- first(onsettime) # 5 Select the first onset time
-  RT <- disengage_trialtime - onset_time # 6 subtract onset time from disengage trial time (can be negative)
-  return(RT) # return the RT
-  
-}
-
-# calculate RT
-steering_data <- steering_data  %>% 
-  dplyr::group_by(ppid, sab, cogload, trialn) %>% 
-  dplyr::mutate(RT = disengage_RT(onsettime, timestamp_trial, autoflag),
-         disengaged = ifelse(is.na(RT), 0, 1) # whether or not they actually took over.
-  )
-
-# change cogload variable into a factor
-steering_data$cogload <- as.factor(steering_data$cogload)
-
-
-#rename cogload factors so that it makes sense - no load and load
-steering_data$cogload <- plyr::mapvalues(steering_data$cogload, from = c("None", "Middle"), to = c("noload", "load"))
-
-#create unique trial id
-steering_data <- steering_data %>% 
-  dplyr::mutate(trialid = paste(ppid, cogload, trialn, sep = "_"))
-
-# select reaction times for each condition
-data_RTs <- steering_data %>% 
-  dplyr::ungroup() %>% 
-  dplyr::group_by(ppid, cogload, trialn) %>% 
-  dplyr::summarise(RT = first(RT),
-                   disengaged = first(disengaged), #whether or not they actually took over.
-                   premature = ifelse(RT <= 0, 1, 0),
-                   sab = first(sab),
-                   maxsb = max(abs(sb_mirrored)),
-                   onsettime = first(onsettime),
-                   design = first(design),
-                   #simTLC = first(simulated_TLC),
-                   autofile_i = first(autofile_i),
-                   TLC_calc = first(TLC_calc))
-```
-
-## Calculating TLC_takeover
-
-To calculate the TLC_takeover, the simulated timings for the silent failures need to be merged with the reaction times. This is done in the following chunk. 
-
-```{r}
-# loading simualted_TLC
-sim_TLCs <- fread(file = here::here("ITS/Multilevel models paper/Mole et al (2020) data and analysis/simulated_ttlcs.csv"))
-
-# merge simulated TLCs with RT dataframe
-data_RTs <- merge(data_RTs, sim_TLCs, by = c("sab","onsettime","autofile_i"))
-
-# calculating TLC_takeover
-data_RTs <- data_RTs %>% 
-  dplyr::mutate(TLC_onset = simulated_ttlc,
-                TLC_takeover = TLC_onset - RT,
-                time_remaining = 15 - onsettime,
-                early = time_remaining - RT,
-                TLC_end_of_trial = TLC_onset - time_remaining)  
-
-# filter out conditions where takeovers did not happen, or they happened too early (i.e., before the onset of the failure)
-data_RTs_cens <- data_RTs %>%
-  dplyr::filter(premature == 0 | is.na(premature)) %>% 
-  dplyr::mutate(censored = ifelse(is.na(TLC_takeover), -1,
-                                  ifelse(TLC_takeover < TLC_end_of_trial, -1, 0)))
-
-data_RTs_cens$cogload <- relevel(data_RTs_cens$cogload, "noload")
-
-#13 moves the wheel pretty much every trial before they should do so they are filtered out
-data_RTs_cens <- dplyr::filter(data_RTs_cens, ppid != 13) 
-
-# removing NAs (i.e, when people did not disengage) and only concentrating on no load conditions
-data_RTs_cens_NA_removed <- data_RTs_cens %>%
-  dplyr::filter(disengaged == 1, cogload == "noload")
-
-# only focusing on balanced conditions and rounding the onset values
-data_RTs_cens_NA_removed <- data_RTs_cens_NA_removed %>% 
-  dplyr::filter(design == "balanced") %>% 
-  dplyr::mutate(TLC_failure = round(TLC_onset, digits = 2)) 
-```
+### Study 1: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. PLoS One, 15(11), e0242825.
 
 ## Distribution of TLC_takeover
 
@@ -216,29 +85,6 @@ summary(mod_1)
 
 # confidence intervals for the linear regression
 confint(mod_1)
-```
-
-## Investigating the residual errors
-
-Here we plot the fitted values against the residuals. 
-
-```{r}
-mod_1_fortified <- fortify(mod_1)
-
-ggplot(mod_1_fortified, aes(x = .fitted, y = .resid)) + 
-  geom_point() +
-  geom_hline(yintercept = 0) +
-  theme_bw() +
-  theme(legend.position = c(.9, .7), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 18), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key = element_blank(), legend.key.width = unit(0.3, 'cm'), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 13, face = "bold"), strip.text = element_text(face = "bold", size = 10))
-```
-
-## Does log transforming the response variable improve the fit?
-
-```{r}
-
-
-
-
 ```
 
 ## Regression model fit
@@ -319,6 +165,7 @@ fig_1 <- linear_regression_plot | subset_sample_plot + plot_layout(axis_titles =
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_1.tiff"), plot = fig_1, width = 16, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
+
 
 ## Fitting a varying intercept model
 
@@ -608,31 +455,14 @@ fig_5 <- ggplot(mod_3_ranef, mapping = aes(x = Intercepts, y = TLC_failure)) +
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = fig_5, width = 8, height = 8, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
-### Study 2: Goodridge, C. M., Gonçalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2023). Gaze Entropy Metrics for Mental Workload Estimation are Heterogenous During Hands-Off Level 2 Automation.
 
-## Load data 
-
-In the original manuscript, participants 34, 39, and 47 were removed. I do the same here, alongside checking the distribution of the data
+### Study 2: Goodridge, C. M., Goncalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2024). Gaze entropy metrics for mental workload estimation are heterogenous during hands-off level 2 automation. Accident Analysis & Prevention, 202, 107560.
 
 ```{r}
-# load data
-goodridge_2023_dat <- fread(file = here::here("gaze_entropy_heterogenous/data/entropy.total.csv"))
-
-# removing participants 
-goodridge_2023_dat <- goodridge_2023_dat %>%
-  tidyr::drop_na() %>%
-  dplyr::filter(ppid != 34, ppid != 39, ppid != 47)
-
 # plotting distribution
 ggplot(data = goodridge_2023_dat, mapping = aes(x = e.norm)) +
   geom_histogram(aes(fill = as.factor(n_back)), alpha=0.5, bins=50, col = "black") +
   facet_wrap(~ lead)
-
-# 38 participants 
-goodridge_2023_dat %>%
-  dplyr::group_by(ppid) %>%
-  dplyr::slice(1) %>%
-  View()
 ```
 
 ## Model fitting
@@ -644,6 +474,7 @@ summary(mod_4)
 
 confint(mod_4)
 ```
+
 
 ## Heterogenity intervals
 
@@ -716,28 +547,4 @@ fig_6 <- ggplot() +
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_6.tiff"), plot = fig_6, width = 16, height = 9, units = 'cm', dpi = 300, type = 'cairo')
 ```
-
-
-## Maximal models
-
-```{r}
-mod_5 <- lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2023_dat)
-
-summary(mod_5)
-```
-
-
-## Comparing MLM outputs to RM ANOVAs
-
-```{r}
-rm_anova <- aov_car(e.norm ~ n_back * lead + Error(ppid/n_back * lead), data = goodridge_2023_dat)
-
-summary(rm_anova)
-eta_squared(rm_anova)
-
-goodridge_2023_dat %>%
-  dplyr::group_by(n_back) %>%
-  dplyr::summarise(mean_e = mean(e.norm), mean_sd = sd(e.norm))
-```
-
 

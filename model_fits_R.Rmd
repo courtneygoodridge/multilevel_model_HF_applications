@@ -1,0 +1,146 @@
+---
+title: "Model fitting in R"
+author: "Courtney Goodridge"
+date: "09/05/2024"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages
+
+```{r}
+if(!require(here)) install.packages("here")
+library(here)
+
+if(!require(ggplot2)) install.packages("ggplot2")
+library(ggplot2)
+
+if(!require(dplyr)) install.packages("dplyr")
+library(dplyr)
+
+if(!require(tidyr)) install.packages("tidyr")
+library(tidyr)
+
+if(!require(viridis)) install.packages("viridis")
+library(viridis)
+
+if(!require(lme4)) install.packages("lme4")
+library(lme4)
+
+if(!require(data.table)) install.packages("data.table")
+library(data.table)
+
+if(!require(emmeans)) install.packages("emmeans")
+library(emmeans)
+
+if(!require(patchwork)) install.packages("patchwork")
+library(patchwork)
+
+if(!require(marginaleffects)) install.packages("marginaleffects")
+library(marginaleffects)
+
+if(!require(purrr)) install.packages("purrr")
+library(purrr)
+
+if(!require(scales)) install.packages("scales")
+library(scales)
+
+if(!require(afex)) install.packages("afex")
+library(afex)
+
+if(!require(effectsize)) install.packages("effectsize")
+library(effectsize)
+```
+
+### Study 1: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. PLoS One, 15(11), e0242825.
+
+## Fitting an ordinary linear regression
+
+```{r}
+# fitting a linear regression model
+mod_1 <- lm(TLC_takeover ~ TLC_failure, data = data_RTs_cens_NA_removed)
+
+# summarizing the linear regression model to see the parameter estimates
+summary(mod_1)
+
+# confidence intervals for the linear regression
+confint(mod_1)
+```
+
+## Fitting a varying intercept model
+
+Here we fit a varying intercept model. The *(1 | ppid)* part of the model equations fits an intercept for each participant. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept. Remember, this is something we need to do as each member of the random effects group has multiple observations. 
+
+```{r}
+# fitting a varying intercept model
+mod_2 <- lme4::lmer(TLC_takeover ~ TLC_failure + (1 | ppid), data = data_RTs_cens_NA_removed)
+
+# summarizing the model
+summary(mod_2)
+
+# generating confidence intervals
+confint(mod_2)
+
+coef(mod_2)[1]
+```
+
+## Fitting a varying intercept, varying slope model
+
+Here we fit a varying intercept, varying slope model. The *(TLC_failure | ppid)* part of the model equations fits an intercept for each participant, and allows each participants slope to vary. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept, and models the differences in sensitivity between different people in the sample. 
+
+```{r}
+# fitting a varying intercept. varying slope model
+mod_3 <- lme4::lmer(TLC_takeover ~ TLC_failure + (TLC_failure | ppid), data = data_RTs_cens_NA_removed)
+
+# summarizing the model
+summary(mod_3)
+
+# generating confidence intervals
+confint(mod_3)
+
+coef(mod_3)[1]
+```
+
+### Study 2: Goodridge, C. M., Goncalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2024). Gaze entropy metrics for mental workload estimation are heterogenous during hands-off level 2 automation. Accident Analysis & Prevention, 202, 107560.
+
+## Model fitting
+
+```{r}
+mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2023_dat)
+
+summary(mod_4)
+
+confint(mod_4)
+```
+
+
+## Maximal models
+
+```{r}
+mod_5 <- lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2023_dat)
+
+summary(mod_5)
+```
+
+
+## Comparing MLM outputs to RM ANOVAs
+
+```{r}
+rm_anova <- aov_car(e.norm ~ n_back * lead + Error(ppid/n_back * lead), data = goodridge_2023_dat)
+
+summary(rm_anova)
+eta_squared(rm_anova)
+
+goodridge_2023_dat %>%
+  dplyr::group_by(n_back) %>%
+  dplyr::summarise(mean_e = mean(e.norm), mean_sd = sd(e.norm))
+```
+
+
+
+
+
+
