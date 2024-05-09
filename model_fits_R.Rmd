@@ -125,6 +125,13 @@ mod_5 <- lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_
 summary(mod_5)
 ```
 
+## Removing correlation parameters
+
+```{r}
+
+
+```
+
 
 ## Comparing MLM outputs to RM ANOVAs
 

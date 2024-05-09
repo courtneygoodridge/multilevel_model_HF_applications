@@ -206,20 +206,20 @@ In the original manuscript, participants 34, 39, and 47 were removed. I do the s
 
 ```{r}
 # load data
-goodridge_2023_dat <- fread(file = here::here("gaze_entropy_heterogenous/data/entropy.total.csv"))
+goodridge_2024_dat <- fread(file = here::here("gaze_entropy_heterogenous/data/entropy.total.csv"))
 
 # removing participants 
-goodridge_2023_dat <- goodridge_2023_dat %>%
+goodridge_2024_dat <- goodridge_2024_dat %>%
   tidyr::drop_na() %>%
   dplyr::filter(ppid != 34, ppid != 39, ppid != 47)
 
 # 38 participants 
-goodridge_2023_dat %>%
+goodridge_2024_dat %>%
   dplyr::group_by(ppid) %>%
   dplyr::slice(1) %>%
   View()
 
-fwrite(goodridge_2023_dat, file = here::here("ITS/Multilevel models paper/Mole et al (2020) data and analysis/goodridge_2023_dat.csv"))
+fwrite(goodridge_2024_dat, file = here::here("ITS/Multilevel models paper/Mole et al (2020) data and analysis/goodridge_2024_dat.csv"))
 ```
 
 
