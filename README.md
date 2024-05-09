@@ -3,7 +3,7 @@
 **Disclaimer**: *This is a working repository and so information and code may change*
 
 ## Overview: Multilevel models
-Multilevel models are extensions of normal linear regression. They allow a researcher or scientist to model the inherent variability between related clusters in a wider population. As an example, lets assume there is a variable X that we believe to be related to a variable Y:
+Multilevel models are extensions of normal linear regression. They allow a scientist to model the inherent variability between related clusters in a wider population. As an example, lets assume there is a variable X that we believe to be related to a variable Y:
 
 ![image](https://github.com/courtneygoodridge/multilevel_model_HF_applications/assets/44811378/989cbf64-c526-4663-a789-476fb217cb3b)
 
