@@ -109,7 +109,7 @@ coef(mod_3)[1]
 ## Model fitting
 
 ```{r}
-mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2023_dat)
+mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
 
 summary(mod_4)
 
