@@ -109,18 +109,17 @@ coef(mod_3)[1]
 ## Model fitting
 
 ```{r}
-mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
+mod_4 <- lme4::lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
 
 summary(mod_4)
 
 confint(mod_4)
 ```
 
-
 ## Maximal models
 
 ```{r}
-mod_5 <- lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2023_dat)
+mod_5 <- lme4::lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2024_dat)
 
 summary(mod_5)
 ```
@@ -128,20 +127,26 @@ summary(mod_5)
 ## Removing correlation parameters
 
 ```{r}
+mod_6 <- afex::lmer_alt(e.norm ~ n_back * lead + (n_back * lead || ppid), data = goodridge_2024_dat)
+
+summary(mod_6)
+
+mod_6_1 <- lme4::lmer(e.norm ~ n_back * lead + (1 + dummy(n_back,0) + dummy(n_back,1) || ppid), data = goodridge_2024_dat)
 
 
+summary(mod_6_1)
 ```
 
 
 ## Comparing MLM outputs to RM ANOVAs
 
 ```{r}
-rm_anova <- aov_car(e.norm ~ n_back * lead + Error(ppid/n_back * lead), data = goodridge_2023_dat)
+rm_anova <- aov_car(e.norm ~ n_back * lead + Error(ppid/n_back * lead), data = goodridge_2024_dat)
 
 summary(rm_anova)
 eta_squared(rm_anova)
 
-goodridge_2023_dat %>%
+goodridge_2024_dat %>%
   dplyr::group_by(n_back) %>%
   dplyr::summarise(mean_e = mean(e.norm), mean_sd = sd(e.norm))
 ```
