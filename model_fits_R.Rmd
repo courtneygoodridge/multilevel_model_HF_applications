@@ -53,6 +53,15 @@ library(afex)
 
 if(!require(effectsize)) install.packages("effectsize")
 library(effectsize)
+
+if(!require(sjPlot)) install.packages("sjPlot")
+library(sjPlot)
+
+if(!require(sjmisc)) install.packages("sjmisc")
+library(sjmisc)
+
+if(!require(sjlabelled)) install.packages("sjlabelled")
+library(sjlabelled)
 ```
 
 ### Study 1: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. PLoS One, 15(11), e0242825.
@@ -68,6 +77,9 @@ summary(mod_1)
 
 # confidence intervals for the linear regression
 confint(mod_1)
+
+# code for the making the APA tbale 
+tab_model(mod_1, show.r2 = FALSE)
 ```
 
 ## Fitting a varying intercept model
@@ -85,6 +97,9 @@ summary(mod_2)
 confint(mod_2)
 
 coef(mod_2)[1]
+
+# code for the making the APA tbale 
+tab_model(mod_2, show.r2 = FALSE)
 ```
 
 ## Fitting a varying intercept, varying slope model
@@ -102,6 +117,8 @@ summary(mod_3)
 confint(mod_3)
 
 coef(mod_3)[1]
+
+tab_model(mod_3)
 ```
 
 ### Study 2: Goodridge, C. M., Goncalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2024). Gaze entropy metrics for mental workload estimation are heterogenous during hands-off level 2 automation. Accident Analysis & Prevention, 202, 107560.
@@ -114,6 +131,8 @@ mod_4 <- lme4::lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2
 summary(mod_4)
 
 confint(mod_4)
+
+tab_model(mod_4)
 ```
 
 ## Maximal models

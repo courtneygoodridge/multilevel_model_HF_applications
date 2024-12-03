@@ -441,12 +441,14 @@ When fitting a multilevel model with varying intercepts and varying slopes, a co
 
 ```{r}
 mod_3_ranef <- as.data.frame(coef(mod_3)$ppid) %>%
-  dplyr::rename_all(~c("Intercepts", "TLC_failure"))
+  dplyr::rename_all(~c("Intercepts", "TLC_failure")) %>%
+  dplyr::mutate("Participant" = row_number())
 
 # correlations between random slopes and random intercepts
 fig_5 <- ggplot(mod_3_ranef, mapping = aes(x = Intercepts, y = TLC_failure)) +
   geom_point() +
-  xlim(.25, .65) +
+  xlim(.15, .65) +
+  ylim(.15, .65) +
   xlab(expression(beta[0[j]])) +
   ylab(expression(beta[F[j]])) +
   theme_bw() +
@@ -468,7 +470,7 @@ ggplot(data = goodridge_2023_dat, mapping = aes(x = e.norm)) +
 ## Model fitting
 
 ```{r}
-mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2023_dat)
+mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
 
 summary(mod_4)
 
