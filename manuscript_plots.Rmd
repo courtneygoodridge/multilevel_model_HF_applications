@@ -74,6 +74,11 @@ ggplot(data = data_RTs_cens_NA_removed, mapping = aes(x = TLC_takeover)) +
   ggtitle("Distribution within each failure condition")
 ```
 
+```{r}
+ggplot() +
+  geom_jitter(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), seed = 1, width = 0.5, alpha = 0.2, size = 1.5)
+```
+
 ## Fitting an ordinary linear regression
 
 ```{r}
@@ -462,7 +467,7 @@ ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = f
 
 ```{r}
 # plotting distribution
-ggplot(data = goodridge_2023_dat, mapping = aes(x = e.norm)) +
+ggplot(data = goodridge_2024_dat, mapping = aes(x = e.norm)) +
   geom_histogram(aes(fill = as.factor(n_back)), alpha=0.5, bins=50, col = "black") +
   facet_wrap(~ lead)
 ```
