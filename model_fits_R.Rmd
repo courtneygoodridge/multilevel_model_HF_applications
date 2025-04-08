@@ -66,6 +66,12 @@ library(sjlabelled)
 
 ### Study 1: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. PLoS One, 15(11), e0242825.
 
+## Loading data
+
+```{r}
+data_RTs_cens_NA_removed <- fread(file = here::here("multilevel_model_HF_applications/data/data_RTs_cens_NA_removed.csv"))
+```
+
 ## Fitting an ordinary linear regression
 
 ```{r}
