@@ -53,6 +53,9 @@ library(afex)
 
 if(!require(effectsize)) install.packages("effectsize")
 library(effectsize)
+
+if(!require(performance)) install.packages("performance")
+library(performance)
 ```
 
 ### Study 1: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. PLoS One, 15(11), e0242825.
@@ -61,6 +64,15 @@ library(effectsize)
 
 ```{r}
 data_RTs_cens_NA_removed <- fread(file = here::here("multilevel_model_HF_applications/data/data_RTs_cens_NA_removed.csv"))
+```
+
+## Number of observations per participants
+
+```{r}
+data_RTs_cens_NA_removed %>%
+  dplyr::group_by(ppid, TLC_failure) %>%
+  dplyr::summarise(n = n()) %>%
+  View()
 ```
 
 ## Distribution of TLC_takeover
@@ -142,8 +154,7 @@ The data points are not independent individual each because each participants ha
 subset_sample_plot <- ggplot() +
   geom_jitter(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), seed = 1, width = 0.5, alpha = 0.1, size = 1.5) +
   geom_jitter(data_RTs_cens_NA_removed %>%
-                dplyr::filter(ppid > 2) %>%
-                dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), seed = 1, width = 0.5, alpha = .6, size = 1.5) +
+                dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), seed = 1, width = 0.5, alpha = .6, size = 1.5) +
   xlab(expression(TLC[F] ~ "(s)")) +
   ylab(expression(TLC[T] ~ "(s)")) +
   ggtitle("B") +
@@ -208,13 +219,12 @@ varying_intercept_emmeans <- emmeans(object = mod_2, specs = ~ TLC_failure, at =
 
 # model predictions - predictions for TLC_t for failure severities between 1.5 s and 10.5 for 5 participants in the model
 TLC_failure <- data.frame(TLC_failure = seq(1.5, to = 10.5, by = .1))
-ppid <- data.frame(ppid = seq(3, to = 5, by = 1))
+ppid <- data.frame(ppid = c(5, 8, 11))
 pred_list <- expand_grid(ppid, TLC_failure)
 
 # 5 participants we are focusing on
 example_5_participants <- data_RTs_cens_NA_removed %>%
-  dplyr::filter(ppid > 2) %>%
-  dplyr::filter(ppid <= 5)
+  dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11)
 
 mod_2_predict_ppids <- predict(mod_2, newdata = pred_list) %>% 
   data.frame() %>% 
@@ -225,11 +235,9 @@ mod_2_predict_ppids <- predict(mod_2, newdata = pred_list) %>%
 fig_2 <- ggplot() +
   geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.5), alpha = 0.1, size = 1.5) +
   geom_point(data_RTs_cens_NA_removed %>%
-               dplyr::filter(ppid > 2) %>%
-               dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .6, size = 1.5) +
+               dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .6, size = 1.5) +
   geom_line(mod_2_predict_ppids %>%
-              dplyr::filter(ppid > 2) %>%
-              dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
+              dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
   xlab(expression(TLC[F] ~ "(s)")) +
   ylab(expression(TLC[T] ~ "(s)")) +
   ylim(0, 7) +
@@ -246,10 +254,9 @@ It's easier to judge the fit if we facet the plot by participant. Whilst fixed s
 # faceting the individual regression lines by participant
 fig3 <- ggplot() +
   geom_point(data_RTs_cens_NA_removed %>%
-               dplyr::filter(ppid > 2) %>%
-               dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .8, size = 1.5) +
+               dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .8, size = 1.5) +
   geom_line(mod_2_predict_ppids %>%
-              dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
+              dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
   xlab(expression(TLC[F] ~ "(s)")) +
   ylab(expression(TLC[T] ~ "(s)")) +
   scale_color_discrete(name = "Participant") +
@@ -409,6 +416,8 @@ summary(mod_3)
 confint(mod_3)
 
 coef(mod_3)[1]
+
+performance::icc(mod_3)
 ```
 
 ## Figure 4
@@ -422,13 +431,12 @@ varying_intercept_slope_emmeans <- emmeans(object = mod_3, specs = ~ TLC_failure
 
 # model predictions - predictions for TLC_t for failure severities between 1.5 s and 10.5 for 5 participants in the model
 TLC_failure <- data.frame(TLC_failure = seq(1.5, to = 10.5, by = .1))
-ppid <- data.frame(ppid = seq(3, to = 5, by = 1))
+ppid <- data.frame(ppid = c(5, 8, 11))
 pred_list <- expand_grid(ppid, TLC_failure)
 
 # 5 participants we are focusing on
 example_5_participants <- data_RTs_cens_NA_removed %>%
-               dplyr::filter(ppid > 2) %>%
-               dplyr::filter(ppid <= 5)
+  dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11)
 
 mod_3_predict_ppids <- predict(mod_3, newdata = pred_list) %>% 
   data.frame() %>% 
@@ -439,11 +447,10 @@ mod_3_predict_ppids <- predict(mod_3, newdata = pred_list) %>%
 fig_4 <- ggplot() +
   geom_point(data_RTs_cens_NA_removed, mapping = aes(x = TLC_failure, TLC_takeover), position = position_jitter(seed = 42, width = 0.5), alpha = 0.1, size = 1.5) +
   geom_point(data_RTs_cens_NA_removed %>%
-               dplyr::filter(ppid > 2) %>%
-               dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .6, size = 1.5) +
+               dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11), mapping = aes(x = TLC_failure, TLC_takeover, col = as.factor(ppid)), position = position_jitter(seed = 42, width = 0.3), alpha = .6, size = 1.5) +
   geom_line(mod_3_predict_ppids %>%
               dplyr::filter(ppid > 2) %>%
-              dplyr::filter(ppid <= 5), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
+              dplyr::filter(ppid == 5 | ppid == 8 | ppid == 11), mapping = aes(x = TLC_failure, y_hat, col = as.factor(ppid))) +
   xlab(expression(TLC[F] ~ "(s)")) +
   ylab(expression(TLC[T] ~ "(s)")) +
   ylim(0, 7) +
@@ -452,30 +459,6 @@ fig_4 <- ggplot() +
   theme(legend.position = "none", legend.direction = "horizontal", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_rect(fill = "transparent"), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 ggsave(here::here("multilevel_model_HF_applications/plots/fig_4.tiff"), plot = fig_4, width = 8, height = 7, units = 'cm', dpi = 300, type = 'cairo')
-```
-
-## Figure 5
-
-When fitting a multilevel model with varying intercepts and varying slopes, a correlation parameter between the two is also estimated. The following section plots that correlation. 
-
-```{r}
-mod_3_ranef <- as.data.frame(coef(mod_3)$ppid) %>%
-  dplyr::rename_all(~c("Intercepts", "TLC_failure")) %>%
-  dplyr::mutate("Participant" = row_number())
-
-# correlations between random slopes and random intercepts
-fig_5 <- ggplot(mod_3_ranef, mapping = aes(x = Intercepts, y = TLC_failure)) +
-  geom_point() +
-  geom_vline(aes(xintercept = fixef(mod_3)[1]), linetype = "dashed") +
-  geom_hline(aes(yintercept = fixef(mod_3)[2]), linetype = "dashed") +
-  xlim(.15, .65) +
-  ylim(.15, .65) +
-  xlab(expression(beta[0[j]])) +
-  ylab(expression(beta[F[j]])) +
-  theme_bw() +
-  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
-
-ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = fig_5, width = 8, height = 7, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
 ### Study 2: Goodridge, C. M., Goncalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2024). Gaze entropy metrics for mental workload estimation are heterogenous during hands-off level 2 automation. Accident Analysis & Prevention, 202, 107560.
@@ -502,6 +485,30 @@ mod_4 <- lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_da
 summary(mod_4)
 
 confint(mod_4)
+```
+
+## Figure 5
+
+When fitting a multilevel model with varying intercepts and varying slopes, a correlation parameter between the two is also estimated. The following section plots that correlation. 
+
+```{r}
+mod_4_ranef <- as.data.frame(coef(mod_4)$ppid) %>%
+  dplyr::rename_all(~c("Intercepts", "n_back_effect", "lead_vehicle_effect", "interaction_effect")) %>%
+  dplyr::mutate("Participant" = row_number())
+
+# correlations between random slopes and random intercepts
+fig_5 <- ggplot(mod_4_ranef, mapping = aes(x = Intercepts, y = n_back_effect)) +
+  geom_point() +
+  geom_vline(aes(xintercept = fixef(mod_4)[1]), linetype = "dashed") +
+  geom_hline(aes(yintercept = fixef(mod_4)[2]), linetype = "dashed") +
+  xlim(.2, .8) +
+  ylim(-.35, .2) +
+  xlab(expression(beta[0[j]])) +
+  ylab(expression(beta[F[j]])) +
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
+
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = fig_5, width = 8, height = 7, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
 
@@ -556,24 +563,24 @@ intervals <- as.data.frame(confint(mod_4))
 
  
 fig_6 <- ggplot() +
-  geom_jitter(individual_effects, mapping = aes(x = x, y = beta_n_j), width = 0.01, height = 0, size = 4,
-              shape = 21, colour = "black", fill = "#619CFF", alpha = .95, stroke = 1) +
+  geom_jitter(individual_effects, mapping = aes(x = x, y = beta_n_j), width = .05, height = 0, size = 4,
+              shape = 21, colour = "black", fill = viridis(5)[3], alpha = .95, stroke = 1) +
   #scale_y_continuous(breaks = round(seq(-.3, .3, 0.05), digits = 2)) +
   ylab(expression("N-back effect on" ~ mu ~ "of" ~ italic(H[s]) ~ "(% point units)")) +
   xlab("") + 
   scale_y_continuous(limits = c(-.35, .1), breaks = seq(-.3, .1, 0.1), labels = label_number(accuracy = 0.01)) +
-  geom_hline(aes(yintercept = intervals$`2.5 %`[6], linetype = "95% CI"), size = 1.5,  color = "#619CFF") +
-  geom_hline(aes(yintercept = intervals$`97.5 %`[6], linetype = "95% CI"), size = 1.5,  color = "#619CFF") +
+  geom_hline(aes(yintercept = intervals$`2.5 %`[6], linetype = "95% CI"),  size = 1.5,  color = viridis(5)[3]) +
+  geom_hline(aes(yintercept = intervals$`97.5 %`[6], linetype = "95% CI"),  size = 1.5,  color = viridis(5)[3]) +
   geom_hline(aes(yintercept = fixef(mod_4)[2], linetype = "beta_1"), size = 1.5, color = "black") +
-  geom_hline(aes(yintercept = (fixef(mod_4)[2] + 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = "#619CFF") +
-  geom_hline(aes(yintercept = (fixef(mod_4)[2] - 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = "#619CFF") +
-    scale_linetype_manual(name = " ", values = c(2, 3, 1), labels = c(expression(CI[95]), expression(HI[95]), expression(beta[N])), guide = guide_legend(override.aes = list(color = c("#619CFF", "#619CFF", "black")))) +
-  scale_fill_manual(name = "Parameter", values = c("dodgerblue2")) +
+  geom_hline(aes(yintercept = (fixef(mod_4)[2] + 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = viridis(5)[2]) +
+  geom_hline(aes(yintercept = (fixef(mod_4)[2] - 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = viridis(5)[2]) +
+  scale_linetype_manual(name = " ", values = c(2, 1, 1), labels = c(expression(CI[95]), expression(HI[95]), expression(beta[N])), guide = guide_legend(override.aes = list(color = c(viridis(5)[3], viridis(5)[2], "black")))) +
+  scale_fill_manual(name = "Parameter", values = c(viridis(5)[2])) +
   theme_bw() +
   theme(legend.position = "bottom", legend.direction = "horizontal", legend.key.width = unit(3, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_rect(fill = "transparent"), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.text.y = element_blank(), axis.ticks.y = element_blank(), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10)) +
   coord_flip()  
 
 
-ggsave(here::here("multilevel_model_HF_applications/plots/fig_6.tiff"), plot = fig_6, width = 16, height = 9, units = 'cm', dpi = 300, type = 'cairo')
+ggsave(here::here("multilevel_model_HF_applications/plots/fig_6.tiff"), plot = fig_6, width = 16, height = 6, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
