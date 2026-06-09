@@ -56,6 +56,12 @@ library(effectsize)
 
 if(!require(performance)) install.packages("performance")
 library(performance)
+
+if(!require(tibble)) install.packages("tibble")
+library(tibble)
+
+if(!require(arm)) install.packages("arm")
+library(arm)
 ```
 
 ### Study 1: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. PLoS One, 15(11), e0242825.
@@ -466,7 +472,7 @@ ggsave(here::here("multilevel_model_HF_applications/plots/fig_4.tiff"), plot = f
 ## Loading data
 
 ```{r}
-goodridge_2024_dat <- fread(file = here::here("multilevel_model_HF_applications/data/goodridge_2024_dat.csv"))
+goodridge_2024_dat <- fread(file = here::here("data/goodridge_2024_dat.csv"))
 ```
 
 
@@ -492,23 +498,54 @@ confint(mod_4)
 When fitting a multilevel model with varying intercepts and varying slopes, a correlation parameter between the two is also estimated. The following section plots that correlation. 
 
 ```{r}
+slopes <- coef(mod_4)$ppid %>%
+  rownames_to_column("ppid") %>%
+  select(ppid, n_backTRUE)
+
+se <- se.ranef(mod_4)$ppid %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("ppid") %>%
+  rename(se_n_back = n_backTRUE)
+
+plot_dat <- left_join(slopes, se, by = "ppid")
+
+plot_dat <- plot_dat %>%
+  mutate(
+    lower = n_backTRUE - 1.96 * se_n_back,
+    upper = n_backTRUE + 1.96 * se_n_back
+  )
+
+fig5a <- ggplot(plot_dat, aes(x = reorder(ppid, n_backTRUE), y = n_backTRUE)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0) +
+  coord_flip() +
+  ggtitle("A") +
+  xlab("Participant") +
+  ylab(expression(beta[N[j]])) +
+  theme_bw() +
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 6), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
+
+
 mod_4_ranef <- as.data.frame(coef(mod_4)$ppid) %>%
   dplyr::rename_all(~c("Intercepts", "n_back_effect", "lead_vehicle_effect", "interaction_effect")) %>%
   dplyr::mutate("Participant" = row_number())
 
 # correlations between random slopes and random intercepts
-fig_5 <- ggplot(mod_4_ranef, mapping = aes(x = Intercepts, y = n_back_effect)) +
+fig5b <- ggplot(mod_4_ranef, mapping = aes(x = Intercepts, y = n_back_effect)) +
   geom_point() +
   geom_vline(aes(xintercept = fixef(mod_4)[1]), linetype = "dashed") +
   geom_hline(aes(yintercept = fixef(mod_4)[2]), linetype = "dashed") +
+  ggtitle("B") +
   xlim(.2, .8) +
   ylim(-.35, .2) +
   xlab(expression(beta[0[j]])) +
-  ylab(expression(beta[F[j]])) +
+  ylab(expression(beta[N[j]])) +
   theme_bw() +
   theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
-ggsave(here::here("multilevel_model_HF_applications/plots/fig_5.tiff"), plot = fig_5, width = 8, height = 7, units = 'cm', dpi = 300, type = 'cairo')
+fig5 <- fig5a | fig5b
+
+ggsave(here::here("plots/fig_5.tiff"), plot = fig5, width = 16, height = 10, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
 

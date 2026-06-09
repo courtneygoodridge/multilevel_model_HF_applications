@@ -143,10 +143,26 @@ tab_model(mod_4)
 
 ## Maximal models
 
+A maximal model contains a random slope for each fixed effect alongside all possible correlations between random effect parameters. The standard deviation for the effect of lead vehicle is by the lowest of all the parameters. 
+
 ```{r}
 mod_5 <- lme4::lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2024_dat)
 
 summary(mod_5)
+```
+
+## LRT for lead vehicle and interaction random effects 
+
+```{r}
+# removing interaction effect
+mod_5_1 <- lme4::lmer(e.norm ~ n_back * lead + (n_back + lead | ppid), data = goodridge_2024_dat)
+
+summary(mod_5_1)
+
+anova(mod_5, mod_5_1)
+
+# removing lead vehicle random slope
+mod_5_2 <- lme4::lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
 ```
 
 ## Removing correlation parameters
