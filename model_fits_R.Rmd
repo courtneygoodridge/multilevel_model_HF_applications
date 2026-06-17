@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Model fits accompanying the Multilevel Models: A Tutorial on Applications and Uses in Human Factors Research
 
-This .Rmd file is the R version of the analysis script that accompanies the manuscript Multilevel Models: A Tutorial on Applications and Uses in Human Factors Research. Within this file, you will find each of the models fitted in manuscript. Each model can be linked to the corresponding place in the manuscript with an equation number that highlights the model and section number that it is associated with. This script also contains some extra detail that was superflourous for the main manuscript, but is nonetheless important for understanding MLMs. 
+This .Rmd file is the R version of the analysis script that accompanies the manuscript Multilevel Models: A Tutorial on Applications and Uses in Human Factors Research. Within this file, you will find each of the models fitted in manuscript. Each model can be linked to the corresponding place in the manuscript with an equation number that highlights the model and section number that it is associated with. This script also contains some extra detail that was superfluous for the main manuscript, but is nonetheless important for understanding MLMs. 
 
 ## Packages
 
