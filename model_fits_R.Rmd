@@ -9,6 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Model fits accompanying the Multilevel Models: A Tutorial on Applications and Uses in Human Factors Research
+
+This .Rmd file is the R version of the analysis script that accompanies the manuscript Multilevel Models: A Tutorial on Applications and Uses in Human Factors Research. Within this file, you will find each of the models fitted in manuscript. Each model can be linked to the corresponding place in the manuscript with an equation number that highlights the model and section number that it is associated with. This script also contains some extra detail that was superflourous for the main manuscript, but is nonetheless important for understanding MLMs. 
+
 ## Packages
 
 ```{r}
@@ -63,7 +67,7 @@ library(sjPlot)
 data_RTs_cens_NA_removed <- fread(file = here::here("data/data_RTs_cens_NA_removed.csv"))
 ```
 
-## Fitting an ordinary linear regression
+## Equation 1 and 2 - Section 2.2 - Ordinary linear regression
 
 ```{r}
 # fitting a linear regression model
@@ -76,7 +80,7 @@ summary(mod_1)
 confint(mod_1)
 ```
 
-## Fitting a varying intercept model
+## Equation 3 - Section 2.3 - Varying intercept-fixed slope model
 
 Here we fit a varying intercept model. The *(1 | ppid)* part of the model equations fits an intercept for each participant. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept. Remember, this is something we need to do as each member of the random effects group has multiple observations. 
 
@@ -96,11 +100,11 @@ confint(mod_2)
 coef(mod_2)[1]
 ```
 
-## Fitting a varying intercept, varying slope model
+## Equation 4 - Section 2.4 - Varying intercept-varying slope model
 
 Here we fit a varying intercept, varying slope model. The *(TLC_failure | ppid)* part of the model equations fits an intercept for each participant, and allows each participants slope to vary. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept, and models the differences in sensitivity between different people in the sample. 
 
-This time 
+This time when we use the *coef()* function, "(Intercept)" and "TLC_failure" both have different values. This demonstrates how we have allowed both the intercepts and slopes to vary. 
 
 ```{r}
 # fitting a varying intercept. varying slope model
@@ -118,7 +122,13 @@ coef(mod_3)[1]
 
 ### Study 2: Goodridge, C. M., Goncalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2024). Gaze entropy metrics for mental workload estimation are heterogenous during hands-off level 2 automation. Accident Analysis & Prevention, 202, 107560.
 
-## Model fitting
+```{r}
+goodridge_2024_dat <- fread(file = here::here("data/goodridge_2024_dat.csv"))
+```
+
+## Equation 5 - Section 3.2 - MLMs with dummy coded variables
+
+Note in the summary of this model that the effect of n_back and lead vehicle are presenting as *n_backTRUE* and *leadTRUE*. As highlighted in the manuscript, this is because these coefficients represent the effect of N-back or lead vehicle when the other variable is held at "0" (e.g., when the manipulation is not present). 
 
 ```{r}
 mod_4 <- lme4::lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
@@ -126,13 +136,11 @@ mod_4 <- lme4::lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2
 summary(mod_4)
 
 confint(mod_4)
-
-tab_model(mod_4)
 ```
 
-## Maximal models
+## Equation 7 - Section 3.5 - Maximal models and singular random effects
 
-A maximal model contains a random slope for each fixed effect alongside all possible correlations between random effect parameters. The standard deviation for the effect of lead vehicle is by the lowest of all the parameters. 
+A maximal model contains a random slope for each fixed effect alongside all possible correlations between random effect parameters. In the model below, the standard deviation for the effect of lead vehicle is the lowest of all the parameters. You can also see that one of the correlation parameters is -0.99. This could be considered a borderline singular estimate as such high correlations indicate that the random effects structure might be over parameterised. 
 
 ```{r}
 mod_5 <- lme4::lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2024_dat)
@@ -140,7 +148,15 @@ mod_5 <- lme4::lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = good
 summary(mod_5)
 ```
 
-## LRT for lead vehicle and interaction random effects 
+## Section 3.5 - LRT for lead vehicle and interaction random effects 
+
+In *mod_5_1* we remove the the random effect for the interaction. We get a warning when fitting this model; that we have a boundary (singular) fit. The summary of the model indicates that this is from the correlation between the intercept and lead vehicle random effects. This singular random effect may be a consequence of the lack of variance associated with the effect of lead vehicle. 
+
+Firstly, we compare the original model (*mod_5*) against the model with the random interaction effect removed (*mod_5_1*). The LRT reveals a non-significant effect indicating that the addition of the random interaction effect does not significantly improve the model fit. 
+
+In *mod_5_2* we remove the lead vehicle random effect - we then compare this against the original model. Once again, we find a non-significant effect indicating the lead vehicle random effect was not improving the model fit. 
+
+Just for illustration, in *mod_5_3* we remove the N-back random effect. We established in Section 3.4 for that the effect of N-back on gaze behaviour was highly variable. As such, we might expect that including the N-back random effect should improve the model fit relative to *mod_5_2* - the significant LRT tests demonstrates this. 
 
 ```{r}
 # removing interaction effect
@@ -153,34 +169,60 @@ anova(mod_5, mod_5_1)
 # removing lead vehicle random slope
 mod_5_2 <- lme4::lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
 
-anova(mod_5_1, mod_5_2)
+anova(mod_5, mod_5_2)
+
+# for illustration - removing the N-back random slope
+mod_5_3 <- lme4::lmer(e.norm ~ n_back * lead + (1 | ppid), data = goodridge_2024_dat)
+
+anova(mod_5_2, mod_5_3)
 ```
 
-## Removing correlation parameters
+## Section4 - Comparing MLM outputs to RM ANOVAs
+
+# RM ANOVA
+
+Below we reproduce the write up in the manuscript for the RM ANOVA before providing the code that generated these values.
+
+"A 2 x2 Repeated Measures ANOVA was conducted to investigate the effect of lead vehicle and N-back on H_s. There was a significant main effect of N-back [F (1, 36) = 50.372, p < 0.001]. This suggests that the gaze of drivers was significantly less dispersed when completing N-back (M = 0.313, SD = 0.142) versus when monitoring a hands-off Level 2 system (M = 0.443, SD = 0.143) with a very large effect size (η_p^2 = 0.58). This significant effect suggests that the distribution of driver’s gaze is reduced when they are under high MWL. As such, H_s is a variable that shows great promise in estimating high MWL in drivers using Level 2 driving systems"
 
 ```{r}
-mod_6 <- afex::lmer_alt(e.norm ~ n_back * lead + (n_back * lead || ppid), data = goodridge_2024_dat)
+afex_options(es_aov = "pes")
 
-summary(mod_6)
+rm_anova <- aov_car(e.norm ~ n_back * lead + Error(ppid/n_back * lead), data = goodridge_2024_dat, es = "pes")
 
-mod_6_1 <- lme4::lmer(e.norm ~ n_back * lead + (1 + dummy(n_back,0) + dummy(n_back,1) || ppid), data = goodridge_2024_dat)
-
-
-summary(mod_6_1)
-```
-
-
-## Comparing MLM outputs to RM ANOVAs
-
-```{r}
-rm_anova <- aov_car(e.norm ~ n_back * lead + Error(ppid/n_back * lead), data = goodridge_2024_dat)
-
-summary(rm_anova)
-eta_squared(rm_anova)
+rm_anova
 
 goodridge_2024_dat %>%
   dplyr::group_by(n_back) %>%
   dplyr::summarise(mean_e = mean(e.norm), mean_sd = sd(e.norm))
+```
+
+# MLM
+
+Below we reproduce the write up in the manuscript for the MLM before providing the code that generated these values.
+
+A multilevel model was fitted to investigate the effect of lead vehicle and N-back on H_s. The model revealed a significant main effect of MWL on H_s (β_N  = -0.141, CI_95 = [-0.180, -0.102], p < .001). This suggests that a typical driver’s gaze is significantly less dispersed when completing N-back (M = 0.313, SD = 0.142) versus when monitoring a hands-off Level 2 system (M = 0.443, SD = 0.143). For the average driver this effect is expected to be a reduction of H_s of around 14 percentage points. However, the multilevel model revealed that this effect is not expected to be homogenous across the population. The random effects within the model imply that some drivers can be expected to have reductions in H_s of 33 percentage points, whilst other drivers are expected to have no change in H_s or even slight reversals of the average effect (HI_95 = [-0.331, 0.047]). Whilst H_s seems suitable for estimating MWL for the typical driver, there are many drivers in the population who may experience high MWL but would not be detected using this metric".
+
+```{r}
+# refitting using lmerTest to generate p values
+mod_4 <- lmerTest::lmer(e.norm ~ n_back * lead + (n_back | ppid), data = goodridge_2024_dat)
+
+confint(mod_4)
+
+#heterogeneity intervals for effect of N-back
+
+# here we extracting the SD of random slopes
+random_effects <- VarCorr(mod_4) %>%
+    as.data.frame()
+
+# here we select the second item in random effects - this is the SD of N-back random slope parameter
+sigma_beta_n <- random_effects$sdcor[2]
+
+# upper bound of the heterogeneity intervals. fixef(mod_4)[2] if the fixed effect for n-back. upper bound means we add 1.96.
+(fixef(mod_4)[2] + 1.96 * sigma_beta_n)
+
+# lower bound of the heterogeneity intervals. fixef(mod_4)[2] if the fixed effect for n-back. lower bound means we subtract 1.96.
+(fixef(mod_4)[2] - 1.96 * sigma_beta_n)
 ```
 
 
