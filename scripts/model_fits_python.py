@@ -14,6 +14,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import classification_report
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from scipy.stats import chi2
+from statsmodels.stats.anova import AnovaRM
+import pingouin as pg
 
 # =============================================================================
 # The sklearn has functionality for fitting linear regressions. However, the summary of cofficients, standard errors, and statistical tests is limited.  As such, there is no equivalent to the summary() function in R. Parameter values have to be extracted manually. One explanation for this is that this package is more focused on machine learning and thus using the model for prediction. However, model building requires some inspection of the model itself before using it for prediction. Hence, for the main model fitting, we concentrate on statsmodel package which provides a more classical statistical approach when summarising model parameters. 
@@ -110,6 +113,8 @@ print(mod_5.summary())
 # =============================================================================
 # Section 3.5 - LRT for lead vehicle and interaction random effects - statsmodel variant
 
+# There is currently no dedicated function that computes an LRT for models fitted using mixed.lm. However, you can compute this manually by returning the attribute called 'llf'.
+
 # In *mod_5_1* we remove the the random effect for the interaction. We get a warning when fitting this model; that we have a boundary (singular) fit. The summary of the model indicates that this is from the correlation between the intercept and lead vehicle random effects. This singular random effect may be a consequence of the lack of variance associated with the effect of lead vehicle. 
 
 # Firstly, we compare the original model (*mod_5*) against the model with the random interaction effect removed (*mod_5_1*). The LRT reveals a non-significant effect indicating that the addition of the random interaction effect does not significantly improve the model fit. 
@@ -120,22 +125,118 @@ print(mod_5.summary())
 
 # =============================================================================
 
-
-## TO DO
-
-# explain that for the statsmodel package there is no direct anova(mod_5, mod_5_1) equivalent function. So you have to computer the LRT manually. This gives the same result, but is more involved. 
-
-# continue this example for the other two mod_5 comparisons. 
-
+# mod_5 - mod_5_1
 mod_5_1 = smf.mixedlm("e_norm ~ n_back * lead", goodridge_2024_dat, groups = goodridge_2024_dat["ppid"], re_formula = "~n_back + lead").fit(reml=False)
 print(mod_5_1.summary())
 
 lr_stat = 2 * (mod_5.llf - mod_5_1.llf)
-
 df_diff = mod_5.df_modelwc - mod_5_1.df_modelwc
-
 p_value = chi2.sf(lr_stat, df_diff)
 
 print(f"LR = {lr_stat:.3f}")
 print(f"df = {df_diff}")
 print(f"p = {p_value:.5f}")
+
+# mod_5 - mod_5_2
+mod_5_2 = smf.mixedlm("e_norm ~ n_back * lead", goodridge_2024_dat, groups = goodridge_2024_dat["ppid"], re_formula = "~n_back").fit(reml=False)
+print(mod_5_2.summary())
+
+lr_stat = 2 * (mod_5.llf - mod_5_2.llf)
+df_diff = mod_5.df_modelwc - mod_5_2.df_modelwc
+p_value = chi2.sf(lr_stat, df_diff)
+
+print(f"LR = {lr_stat:.3f}")
+print(f"df = {df_diff}")
+print(f"p = {p_value:.5f}")
+
+# mod_5_2 - mod_5_3
+mod_5_3 = smf.mixedlm("e_norm ~ n_back * lead", goodridge_2024_dat, groups = goodridge_2024_dat["ppid"]).fit(reml=False)
+print(mod_5_3.summary())
+
+lr_stat = 2 * (mod_5_2.llf - mod_5_3.llf)
+df_diff = mod_5_2.df_modelwc - mod_5_3.df_modelwc
+p_value = chi2.sf(lr_stat, df_diff)
+
+print(f"LR = {lr_stat:.3f}")
+print(f"df = {df_diff}")
+print(f"p = {p_value:.5f}")
+
+# =============================================================================
+# Section 4 - Comparing MLM outputs to RM ANOVAs
+# =============================================================================
+
+# RM ANOVA
+
+# Below we reproduce the write up in the manuscript for the RM ANOVA before providing the code that generated these values.
+
+# "A 2 x2 Repeated Measures ANOVA was conducted to investigate the effect of lead vehicle and N-back on H_s. There was a significant main effect of N-back [F (1, 36) = 50.372, p < 0.001]. This suggests that the gaze of drivers was significantly less dispersed when completing N-back (M = 0.313, SD = 0.142) versus when monitoring a hands-off Level 2 system (M = 0.443, SD = 0.143) with a very large effect size (η_p^2 = 0.58). This significant effect suggests that the distribution of driver’s gaze is reduced when they are under high MWL. As such, H_s is a variable that shows great promise in estimating high MWL in drivers using Level 2 driving systems"
+
+# aggregating data
+anova_dat = (
+    goodridge_2024_dat
+    .groupby(["ppid", "n_back", "lead"], as_index=False)
+    .agg(e_norm=("e_norm", "mean"))
+)
+
+# checking complete cells
+cell_counts = anova_dat.groupby("ppid").size()
+print(cell_counts.value_counts())
+
+# removing incomplete participants
+complete_ppids = cell_counts[cell_counts == 4].index
+
+anova_dat_complete = anova_dat[
+    anova_dat["ppid"].isin(complete_ppids)
+]
+
+# running anova
+rm_anova = AnovaRM(
+    data=anova_dat_complete,
+    depvar="e_norm",
+    subject="ppid",
+    within=["n_back", "lead"],
+).fit()
+
+print(rm_anova)
+
+# sample means of e_norm for N-back and no N-back conditions
+summary = (
+    goodridge_2024_dat
+    .groupby("n_back")
+    .agg(
+        mean_e=("e_norm", "mean"),
+        mean_sd=("e_norm", "std")
+    )
+    .reset_index()
+)
+
+print(summary)
+
+# MLM
+
+# Below we reproduce the write up in the manuscript for the MLM before providing the code that generated these values.
+
+# A multilevel model was fitted to investigate the effect of lead vehicle and N-back on H_s. The model revealed a significant main effect of MWL on H_s (β_N  = -0.141, CI_95 = [-0.180, -0.102], p < .001). This suggests that a typical driver’s gaze is significantly less dispersed when completing N-back (M = 0.313, SD = 0.142) versus when monitoring a hands-off Level 2 system (M = 0.443, SD = 0.143). For the average driver this effect is expected to be a reduction of H_s of around 14 percentage points. However, the multilevel model revealed that this effect is not expected to be homogenous across the population. The random effects within the model imply that some drivers can be expected to have reductions in H_s of 33 percentage points, whilst other drivers are expected to have no change in H_s or even slight reversals of the average effect (HI_95 = [-0.331, 0.047]). Whilst H_s seems suitable for estimating MWL for the typical driver, there are many drivers in the population who may experience high MWL but would not be detected using this metric".
+
+# running MLM
+mod_4 = smf.mixedlm("e_norm ~ n_back * lead", goodridge_2024_dat, groups = goodridge_2024_dat["ppid"], re_formula = "~n_back")
+results_mod_4 = mod_4.fit()
+print(results_mod_4.summary())
+
+# Fixed effect for n_back
+beta_n = results_mod_4.fe_params["n_back[T.True]"]
+
+# SD of random slope for n_back
+sigma_beta_n = np.sqrt(results_mod_4.cov_re.loc["n_back[T.True]", "n_back[T.True]"])
+
+# Heterogeneity interval
+lower = beta_n - 1.96 * sigma_beta_n
+upper = beta_n + 1.96 * sigma_beta_n
+
+print(f"Fixed effect (n_back): {beta_n:.3f}")
+print(f"Random slope SD: {sigma_beta_n:.3f}")
+print(f"95% heterogeneity interval: [{lower:.3f}, {upper:.3f}]")
+
+
+
+

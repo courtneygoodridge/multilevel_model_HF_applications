@@ -177,7 +177,7 @@ mod_5_3 <- lme4::lmer(e.norm ~ n_back * lead + (1 | ppid), data = goodridge_2024
 anova(mod_5_2, mod_5_3)
 ```
 
-## Section4 - Comparing MLM outputs to RM ANOVAs
+## Section 4 - Comparing MLM outputs to RM ANOVAs
 
 # RM ANOVA
 
