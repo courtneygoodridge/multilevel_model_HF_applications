@@ -16,7 +16,12 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from scipy.stats import chi2
 from statsmodels.stats.anova import AnovaRM
-import pingouin as pg
+
+# =============================================================================
+# Model fits accompanying the Multilevel Models: A Tutorial on Applications and Uses in Human Factors Research
+
+# This .py file is the R version of the analysis script that accompanies the manuscript Multilevel Models: A Tutorial on Applications and Uses in Human Factors Research. Within this file, you will find each of the models fitted in manuscript. Each model can be linked to the corresponding place in the manuscript with an equation number that highlights the model and section number that it is associated with. This script also contains some extra detail that was superfluous for the main manuscript, but is nonetheless important for understanding MLMs. 
+# =============================================================================
 
 # =============================================================================
 # The sklearn has functionality for fitting linear regressions. However, the summary of cofficients, standard errors, and statistical tests is limited.  As such, there is no equivalent to the summary() function in R. Parameter values have to be extracted manually. One explanation for this is that this package is more focused on machine learning and thus using the model for prediction. However, model building requires some inspection of the model itself before using it for prediction. Hence, for the main model fitting, we concentrate on statsmodel package which provides a more classical statistical approach when summarising model parameters. 
@@ -28,9 +33,11 @@ import pingouin as pg
 file_path_mole = here() / "data" / "data_RTs_cens_NA_removed.csv"
 
 data_RTs_cens_NA_removed = pd.read_csv(file_path_mole)
+
+# sklearn variant. As mentioned above - this model fit is quite an involved process. Which is why statsmodel is used for all remaining models. 
+
 # =============================================================================
-# Equation 1 and 2 - Section 2.2 - Ordinary linear regression - sklearn variant
-# As mentioned above - this model fit is quite an involved process. Which is why statsmodel is used for all remaining models. 
+# Section 2.2 - Ordinary linear regression (Equation 1 and 2)
 # =============================================================================
 
 # Prepare data for model fitting
@@ -48,9 +55,10 @@ print(f"intercept: {model.intercept_}")
 
 print(f"coefficients: {model.coef_}")
 
+# statsmodel variant
 
 # =============================================================================
-# Equation 1 and 2 - Section 2.2 - Ordinary linear regression - statsmodel variant
+# Section 2.2 - Ordinary linear regression (Equation 1 and 2) 
 # =============================================================================
 
 # this line of code adds an intercept into the regression model. Without it, the model only has a slope parameter
@@ -62,11 +70,13 @@ results = model_sm.fit()
 print(results.summary())
 
 # =============================================================================
-# Equation 3 - Section 2.3 - Varying intercept-fixed slope model - statsmodel variant
+# Section 2.3 - Varying intercept-fixed slope model (Equation 3)
 
 # The statsmodel package implementation of linear multilevel models closely follows the implementation used in the lme4 package (outlined in Lindstrom & Bates, JASA, 1988). Hence the results should be identical. The model below has varying intercepts specificed for each member of the ppid group (i.e., an intercept for each participant).
 
 # In the statsmodel package, the random effect for each participant is highlighted in the main table and is titled "Group Var". This refers to the estimated variance (sigma sqaured) of the participant specific randon intercepts. 
+
+# Here we fit a varying intercept model. The "groups = data_RTs_cens_NA_removed["ppid"]" part of the model equations fits an intercept for each participant. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept. Remember, this is something we need to do as each member of the random effects group has multiple observations. 
 # =============================================================================
 
 mod_2 = smf.mixedlm("TLC_takeover ~ TLC_failure", data_RTs_cens_NA_removed, groups = data_RTs_cens_NA_removed["ppid"])
@@ -74,9 +84,11 @@ results_mod_2 = mod_2.fit()
 print(results_mod_2.summary())
 
 # =============================================================================
-# Equation 4 - Section 2.4 - Varying intercept-varying slope model - statsmodel variant
+# Section 2.4 - Varying intercept-varying slope model (Equation 4)
 
 # To add a varying slope with respect to the included predictor, specify a variable using the re_formula argument. The variance parameter for the varying intercept is titled "Group Var", the variance parameter for the varying slope is titled "TLC_failure Var", and the covariance parameter highlighting the correlation between the two must be calculated from these values and the "Group x TLC_failure Cov" values: (-0.005 / sqrt(0.007 * 0.005)) ~ -.83. This is obviously more involved than using lme4 in R. 
+
+# Here we fit a varying intercept, varying slope model. The "re_formula = "~TLC_failure"" part of the model allows each participants slope to vary. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept, and models the differences in sensitivity between different people in the sample. 
 
 # =============================================================================
 
@@ -95,7 +107,10 @@ goodridge_2024_dat = pd.read_csv(file_path_goodridge)
 goodridge_2024_dat = goodridge_2024_dat.rename(columns = {"e.norm": "e_norm"})
 
 # =============================================================================
-# Equation 5 - Section 3.2 - MLMs with dummy coded variables - statsmodel variant
+# Section 3.2 - MLMs with dummy coded variables (Equation 5)
+
+# Note in the summary of this model that the effect of n_back and lead vehicle are presenting as "n_back[T.True]" and "lead[T.True]". As highlighted in the manuscript, this is because these coefficients represent the effect of N-back or lead vehicle when the other variable is held at "0" (e.g., when the manipulation is not present). 
+
 # =============================================================================
 
 mod_4 = smf.mixedlm("e_norm ~ n_back * lead", goodridge_2024_dat, groups = goodridge_2024_dat["ppid"], re_formula = "~n_back")
@@ -103,7 +118,10 @@ results_mod_4 = mod_4.fit()
 print(results_mod_4.summary())
 
 # =============================================================================
-# Equation 7 - Section 3.5 - Maximal models and singular random effects - statsmodel variant
+# Section 3.5 - Maximal models and singular random effects (Equation 7)
+
+# A maximal model contains a random slope for each fixed effect alongside all possible correlations between random effect parameters. In the model below, the standard deviation for the effect of lead vehicle is the lowest of all the parameters. Y You can also see that the correlation between the N-back slope and the interaction slope is -0.99. This could be considered a borderline singular estimate as such high correlations indicate that the random effects structure might be over parameterised. 
+
 # =============================================================================
 
 mod_5 = smf.mixedlm("e_norm ~ n_back * lead", goodridge_2024_dat, groups = goodridge_2024_dat["ppid"], re_formula = "~n_back * lead").fit(reml=False)
@@ -111,7 +129,7 @@ print(mod_5.summary())
 
 
 # =============================================================================
-# Section 3.5 - LRT for lead vehicle and interaction random effects - statsmodel variant
+# Section 3.5 - LRT for lead vehicle and interaction random effects
 
 # There is currently no dedicated function that computes an LRT for models fitted using mixed.lm. However, you can compute this manually by returning the attribute called 'llf'.
 

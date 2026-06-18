@@ -54,9 +54,6 @@ library(scales)
 
 if(!require(afex)) install.packages("afex")
 library(afex)
-
-if(!require(sjPlot)) install.packages("sjPlot")
-library(sjPlot)
 ```
 
 ### Study 1: Mole, C., Pekkanen, J., Sheppard, W., Louw, T., Romano, R., Merat, N., ... & Wilkie, R. (2020). Predicting takeover response to silent automated vehicle failures. PLoS One, 15(11), e0242825.
@@ -64,10 +61,12 @@ library(sjPlot)
 ## Loading data
 
 ```{r}
-data_RTs_cens_NA_removed <- fread(file = here::here("data/data_RTs_cens_NA_removed.csv"))
+here::i_am("scripts/model_fits_R.Rmd")
+
+data_RTs_cens_NA_removed <- fread(file = here::here("data", "data_RTs_cens_NA_removed.csv"))
 ```
 
-## Equation 1 and 2 - Section 2.2 - Ordinary linear regression
+## Section 2.2 - Ordinary linear regression (Equation 1 and 2)
 
 ```{r}
 # fitting a linear regression model
@@ -80,7 +79,7 @@ summary(mod_1)
 confint(mod_1)
 ```
 
-## Equation 3 - Section 2.3 - Varying intercept-fixed slope model
+## Section 2.3 - Varying intercept-fixed slope model (Equation 3)
 
 Here we fit a varying intercept model. The *(1 | ppid)* part of the model equations fits an intercept for each participant. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept. Remember, this is something we need to do as each member of the random effects group has multiple observations. 
 
@@ -100,7 +99,7 @@ confint(mod_2)
 coef(mod_2)[1]
 ```
 
-## Equation 4 - Section 2.4 - Varying intercept-varying slope model
+## Section 2.4 - Varying intercept-varying slope model (Equation 4)
 
 Here we fit a varying intercept, varying slope model. The *(TLC_failure | ppid)* part of the model equations fits an intercept for each participant, and allows each participants slope to vary. This accounts for the non-independence of observations by constraining the non-independent clusters to the same intercept, and models the differences in sensitivity between different people in the sample. 
 
@@ -123,10 +122,10 @@ coef(mod_3)[1]
 ### Study 2: Goodridge, C. M., Goncalves, R. C., Arabian, A., Horrobin, A., Solernou, A., Lee, Y. T., ... & Merat, N. (2024). Gaze entropy metrics for mental workload estimation are heterogenous during hands-off level 2 automation. Accident Analysis & Prevention, 202, 107560.
 
 ```{r}
-goodridge_2024_dat <- fread(file = here::here("data/goodridge_2024_dat.csv"))
+goodridge_2024_dat <- fread(file = here::here("data", "goodridge_2024_dat.csv"))
 ```
 
-## Equation 5 - Section 3.2 - MLMs with dummy coded variables
+## Section 3.2 - MLMs with dummy coded variables (Equation 5)
 
 Note in the summary of this model that the effect of n_back and lead vehicle are presenting as *n_backTRUE* and *leadTRUE*. As highlighted in the manuscript, this is because these coefficients represent the effect of N-back or lead vehicle when the other variable is held at "0" (e.g., when the manipulation is not present). 
 
@@ -138,9 +137,9 @@ summary(mod_4)
 confint(mod_4)
 ```
 
-## Equation 7 - Section 3.5 - Maximal models and singular random effects
+## Section 3.5 - Maximal models and singular random effects (Equation 7)
 
-A maximal model contains a random slope for each fixed effect alongside all possible correlations between random effect parameters. In the model below, the standard deviation for the effect of lead vehicle is the lowest of all the parameters. You can also see that one of the correlation parameters is -0.99. This could be considered a borderline singular estimate as such high correlations indicate that the random effects structure might be over parameterised. 
+A maximal model contains a random slope for each fixed effect alongside all possible correlations between random effect parameters. In the model below, the standard deviation for the effect of lead vehicle is the lowest of all the parameters. Y You can also see that the correlation between the N-back slope and the interaction slope is -0.99. This could be considered a borderline singular estimate as such high correlations indicate that the random effects structure might be over parameterised. 
 
 ```{r}
 mod_5 <- lme4::lmer(e.norm ~ n_back * lead + (n_back * lead | ppid), data = goodridge_2024_dat)
@@ -159,11 +158,12 @@ In *mod_5_2* we remove the lead vehicle random effect - we then compare this aga
 Just for illustration, in *mod_5_3* we remove the N-back random effect. We established in Section 3.4 for that the effect of N-back on gaze behaviour was highly variable. As such, we might expect that including the N-back random effect should improve the model fit relative to *mod_5_2* - the significant LRT tests demonstrates this. 
 
 ```{r}
-# removing interaction effect
+# removing interaction random effect
 mod_5_1 <- lme4::lmer(e.norm ~ n_back * lead + (n_back + lead | ppid), data = goodridge_2024_dat)
 
 summary(mod_5_1)
 
+# LRT comparing models
 anova(mod_5, mod_5_1)
 
 # removing lead vehicle random slope
@@ -201,7 +201,7 @@ goodridge_2024_dat %>%
 
 Below we reproduce the write up in the manuscript for the MLM before providing the code that generated these values.
 
-A multilevel model was fitted to investigate the effect of lead vehicle and N-back on H_s. The model revealed a significant main effect of MWL on H_s (β_N  = -0.141, CI_95 = [-0.180, -0.102], p < .001). This suggests that a typical driver’s gaze is significantly less dispersed when completing N-back (M = 0.313, SD = 0.142) versus when monitoring a hands-off Level 2 system (M = 0.443, SD = 0.143). For the average driver this effect is expected to be a reduction of H_s of around 14 percentage points. However, the multilevel model revealed that this effect is not expected to be homogenous across the population. The random effects within the model imply that some drivers can be expected to have reductions in H_s of 33 percentage points, whilst other drivers are expected to have no change in H_s or even slight reversals of the average effect (HI_95 = [-0.331, 0.047]). Whilst H_s seems suitable for estimating MWL for the typical driver, there are many drivers in the population who may experience high MWL but would not be detected using this metric".
+"A multilevel model was fitted to investigate the effect of lead vehicle and N-back on H_s. The model revealed a significant main effect of MWL on H_s (β_N  = -0.141, CI_95 = [-0.180, -0.102], p < .001). This suggests that a typical driver’s gaze is significantly less dispersed when completing N-back (M = 0.313, SD = 0.142) versus when monitoring a hands-off Level 2 system (M = 0.443, SD = 0.143). For the average driver this effect is expected to be a reduction of H_s of around 14 percentage points. However, the multilevel model revealed that this effect is not expected to be homogenous across the population. The random effects within the model imply that some drivers can be expected to have reductions in H_s of 33 percentage points, whilst other drivers are expected to have no change in H_s or even slight reversals of the average effect (HI_95 = [-0.331, 0.047]). Whilst H_s seems suitable for estimating MWL for the typical driver, there are many drivers in the population who may experience high MWL but would not be detected using this metric".
 
 ```{r}
 # refitting using lmerTest to generate p values
