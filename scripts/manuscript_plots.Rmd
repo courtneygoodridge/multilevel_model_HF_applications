@@ -69,7 +69,7 @@ library(arm)
 ## Loading data
 
 ```{r}
-data_RTs_cens_NA_removed <- fread(file = here::here("multilevel_model_HF_applications/data/data_RTs_cens_NA_removed.csv"))
+data_RTs_cens_NA_removed <- fread(file = here::here("data/data_RTs_cens_NA_removed.csv"))
 ```
 
 ## Number of observations per participants
@@ -502,7 +502,7 @@ slopes <- coef(mod_4)$ppid %>%
   rownames_to_column("ppid") %>%
   select(ppid, n_backTRUE)
 
-se <- se.ranef(mod_4)$ppid %>%
+se <- ranef(mod_4)$ppid %>%
   as.data.frame() %>%
   tibble::rownames_to_column("ppid") %>%
   rename(se_n_back = n_backTRUE)
@@ -510,7 +510,7 @@ se <- se.ranef(mod_4)$ppid %>%
 plot_dat <- left_join(slopes, se, by = "ppid")
 
 plot_dat <- plot_dat %>%
-  mutate(
+  dplyr::mutate(
     lower = n_backTRUE - 1.96 * se_n_back,
     upper = n_backTRUE + 1.96 * se_n_back
   )
@@ -521,9 +521,9 @@ fig5a <- ggplot(plot_dat, aes(x = reorder(ppid, n_backTRUE), y = n_backTRUE)) +
   coord_flip() +
   ggtitle("A") +
   xlab("Participant") +
-  ylab(expression(beta[N[j]])) +
+  ylab(expression(paste("Participant slopes (", beta[N[j]], ")"))) +
   theme_bw() +
-  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 6), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
+  theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 8), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 
 mod_4_ranef <- as.data.frame(coef(mod_4)$ppid) %>%
@@ -538,14 +538,14 @@ fig5b <- ggplot(mod_4_ranef, mapping = aes(x = Intercepts, y = n_back_effect)) +
   ggtitle("B") +
   xlim(.2, .8) +
   ylim(-.35, .2) +
-  xlab(expression(beta[0[j]])) +
-  ylab(expression(beta[N[j]])) +
+  xlab(expression(paste("Participant intercepts (", beta[0[j]], ")"))) +
+  ylab(expression(paste("Participant slopes (", beta[N[j]], ")"))) +
   theme_bw() +
   theme(legend.position = "none", legend.key.width = unit(0.1, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_blank(), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.title.y = element_text(size = 15), axis.text.y = element_text(size = 15), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10))
 
 fig5 <- fig5a | fig5b
 
-ggsave(here::here("plots/fig_5.tiff"), plot = fig5, width = 16, height = 10, units = 'cm', dpi = 300, type = 'cairo')
+ggsave(here::here("plots/fig_5.tiff"), plot = fig5, width = 16, height = 12, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
 
@@ -601,23 +601,21 @@ intervals <- as.data.frame(confint(mod_4))
  
 fig_6 <- ggplot() +
   geom_jitter(individual_effects, mapping = aes(x = x, y = beta_n_j), width = .05, height = 0, size = 4,
-              shape = 21, colour = "black", fill = viridis(5)[3], alpha = .95, stroke = 1) +
+              shape = 21, colour = "black", alpha = .95, stroke = 1) +
   #scale_y_continuous(breaks = round(seq(-.3, .3, 0.05), digits = 2)) +
   ylab(expression("N-back effect on" ~ mu ~ "of" ~ italic(H[s]) ~ "(% point units)")) +
   xlab("") + 
   scale_y_continuous(limits = c(-.35, .1), breaks = seq(-.3, .1, 0.1), labels = label_number(accuracy = 0.01)) +
-  geom_hline(aes(yintercept = intervals$`2.5 %`[6], linetype = "95% CI"),  size = 1.5,  color = viridis(5)[3]) +
-  geom_hline(aes(yintercept = intervals$`97.5 %`[6], linetype = "95% CI"),  size = 1.5,  color = viridis(5)[3]) +
-  geom_hline(aes(yintercept = fixef(mod_4)[2], linetype = "beta_1"), size = 1.5, color = "black") +
-  geom_hline(aes(yintercept = (fixef(mod_4)[2] + 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = viridis(5)[2]) +
-  geom_hline(aes(yintercept = (fixef(mod_4)[2] - 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5, color = viridis(5)[2]) +
-  scale_linetype_manual(name = " ", values = c(2, 1, 1), labels = c(expression(CI[95]), expression(HI[95]), expression(beta[N])), guide = guide_legend(override.aes = list(color = c(viridis(5)[3], viridis(5)[2], "black")))) +
-  scale_fill_manual(name = "Parameter", values = c(viridis(5)[2])) +
+  geom_hline(aes(yintercept = intervals$`2.5 %`[6], linetype = "95% CI"),  size = 1.5) +
+  geom_hline(aes(yintercept = intervals$`97.5 %`[6], linetype = "95% CI"),  size = 1.5) +
+  geom_hline(aes(yintercept = fixef(mod_4)[2], linetype = "beta_1"), size = 1.5) +
+  geom_hline(aes(yintercept = (fixef(mod_4)[2] + 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5) +
+  geom_hline(aes(yintercept = (fixef(mod_4)[2] - 1.96 * sigma_beta_n), linetype = "95% HI"), size = 1.5) +
+  scale_linetype_manual(name = " ", values = c(2, 3, 1), labels = c(expression(CI[95]), expression(HI[95]), expression(beta[N]))) +
   theme_bw() +
   theme(legend.position = "bottom", legend.direction = "horizontal", legend.key.width = unit(3, 'cm'), legend.key.height = unit(0.1, 'cm'), legend.key = element_rect(fill = "transparent"), axis.title.x = element_text(size = 15), axis.text.x = element_text(size = 15), axis.text.y = element_blank(), axis.ticks.y = element_blank(), title = element_text(size = 25), legend.title = element_text(size = 12), legend.text = element_text(size = 12), legend.key.size = unit(0.1, 'cm'), plot.title = element_text(size = 22, face = "bold"), strip.text = element_text(face = "bold", size = 10)) +
   coord_flip()  
 
-
-ggsave(here::here("multilevel_model_HF_applications/plots/fig_6.tiff"), plot = fig_6, width = 16, height = 6, units = 'cm', dpi = 300, type = 'cairo')
+ggsave(here::here("plots/fig_6.tiff"), plot = fig_6, width = 16, height = 6, units = 'cm', dpi = 300, type = 'cairo')
 ```
 
