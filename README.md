@@ -24,9 +24,9 @@ I have given numerous talks and presentations about this analysis method. I beli
 One reason for the lack of uptake in Human Factors is a lack of any formal tutorials. Whilst tutorials exist, they are largely in areas of Ecology, Linguistics, or Edcuation research. This is not surprising, considering that the quantitative data produced in these research areas is naturally hierarchical (e.g., Education: pupils within classes, classes within schools, schools within counties, and so on). These tutorials are fine in and of themselves, and can undoubtedly help people under the models. However, from my own experience, the hurdle is lessened if their is a tutorial that focuses specifically on the data you are working with. In this sense, I am providing the tutorial that I wanted when I first started working on these models back in 2019.   
 
 ## Code and analysis
-This repository contains the code that follows the analysis in the manuscript. I have provided code in three common programming languages - R, Python, and Matlab. Having used all three of these languages, I would suggest using R given it was specifically designed for statistical modelling. 
+This repository contains the code and data that follows the analysis in the manuscript. I have provided code in three common programming languages - R, Python, and Matlab. Having used all three of these languages, I would suggest using R given it was specifically designed for statistical modelling. But anyone is free to use whatever they like.
 
-To run the code, clone the Github repository into working directory. Once you have you done this, open the project in the programming langugae of your choice (R = multilevel_model_HF_applications.Rproj; Python = )
+To run the code, clone the Github repository into your working directory. Once you have you done this, open the project in the programming langugae of your choice (R = multilevel_model_HF_applications.Rproj; Python = ). You should then be able to run the code 
 
 
 
