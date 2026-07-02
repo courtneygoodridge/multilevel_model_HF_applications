@@ -26,13 +26,26 @@ One reason for the lack of uptake in Human Factors is a lack of any formal tutor
 ## Code and analysis
 This repository contains the analysis code in three languages - R, Python, and MATLAB - all reproducing the same set of multilevel models described in the manuscript. Having used all three, I'd recommend R, since it was purpose-built for statistical modelling. Start by cloning the repository so the relative file paths (set up via project-root packages) resolve correctly; the two data files used by the models (`data_RTs_cens_NA_removed.csv` and `goodridge_2024_dat.csv`) are already included in the data/ folder, so no extra download is needed to run the core model-fitting scripts.
 
-R: Open `multilevel_model_HF_applications.Rproj` in RStudio - this sets the working directory automatically. The main analysis lives in `scripts/model_fits_R.Rmd`; open it and run the chunks in order (or knit the whole file). It uses the here package for file paths and depends on `ggplot2`, `dplyr`, `tidyr`, `viridis`, `lme4`, `data.table`, `emmeans`, `patchwork`, `marginaleffects`, `purrr`, `scales`, and `afex` — each is auto-installed via `if(!require(...)) install.packages(...)` at the top of the script if missing. Related scripts (`data_preprocessing.Rmd`, `manuscript_plots.Rmd`, `readme_plots_script.Rmd`) regenerate the source data and figures if you want to reproduce those steps too.
+# R (using RStudio): 
+The main analysis lives in `scripts/model_fits_R.Rmd`, and it uses the here package to locate the data/ folder relative to the project root - so RStudio needs to be pointed at the repository via its project file, or the relative paths won't resolve.
 
-Python: Run `scripts/model_fits_python.py` from the repository root (or open it in an IDE - e.g., Spyder - with the root as the working directory) after installing `pandas`, `numpy`, `scikit-learn`, `statsmodels`, `scipy`, and `pyprojroot`. It uses `pyprojroot.here()` to locate `data/data_RTs_cens_NA_removed.csv` relative to the project root, so the script must be run from within the cloned repo structure rather than a copied-out standalone file.
+Clone the repository into a working directory. Open RStudio and then go to File → Open File → and open `multilevel_model_HF_applications.Rproj`. This automatically sets RStudio's working directory to the repo root — you can confirm this by checking the path shown in the Files pane, or by running `getwd()` in the console.
+With the project open, open `scripts/model_fits_R.Rmd` (File → Open File, browse into scripts/). Now you can run the script chunk-by-chunk using the green "play" arrows in the top-right of each code chunk if you want to step through each model individually.
 
-MATLAB: Open `model_fits_for_matlab.prj` to load the MATLAB project (this sets the correct paths automatically), then open and run `scripts/model_fits_matlab.mlx`, a MATLAB Live Script containing the equivalent model fits, section by section.
+The script auto-installs any missing packages the first time it's run, via `if(!require(...)) install.packages(...)` - this covers `here`, `ggplot2`, `dplyr`, `tidyr`, `viridis`, `lme4`, `data.table`, `emmeans`, `patchwork`, `marginaleffects`, `purrr`, `scales`, and `afex`. If you'd rather reproduce the earlier data-preparation and figure-generation steps too, `data_preprocessing.Rmd`, `manuscript_plots.Rmd`, and `readme_plots_script.Rmd` (also in scripts/) can be run the same way.
 
-Each script mirrors the same sequence of models (from the basic linear regression through to the full multilevel specifications), cross-referenced to the equation and section numbers in the manuscript, so you can follow along in whichever language you're most comfortable with.
+# Python (using Spyder): 
+The script is `scripts/model_fits_python.py`, and it relies on pyprojroot's `here()` function to find the data/ folder - so Spyder's working directory must be set to the repository root before you run it, or the script will fail to find the data file even though it opens without errors.
+
+Clone the repository into a working directory, then in Spyder go to Projects → Open Project… and select the folder you cloned (the one directly containing scripts/, data/, and a hidden .spyproject folder). The repo already includes a pre-configured Spyder project, so Spyder will recognize it and set the working directory to that folder automatically - check the working directory shown at the top of the IPython console to confirm. With the project open, open `scripts/model_fits_python.py`. I would advise running highlighted chunks at a time. 
+
+Before running, make sure the required packages are installed in your Spyder environment: `pandas`, `numpy`, `scikit-learn`, `statsmodels`, `scipy`, and `pyprojroot`. Install any missing ones from Spyder's IPython console with, e.g., `pip install pyprojroot`.
+
+# MATLAB: 
+The analysis is in `scripts/model_fits_matlab.mlx`, a MATLAB Live Script. It needs to be run from within the pre-configured MATLAB project so the correct folders are on the MATLAB path.
+
+Clone the repository into a working directory, then in MATLAB open `model_fits_for_matlab.prj` to load the MATLAB project (this sets the correct paths automatically). 
+With the project open, open `scripts/model_fits_matlab.mlx` from the `Current Folder` browser (double-click it). Run the Live Script section-by-section using Run Section if you want to step through each model individually.
 
 
 
